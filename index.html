@@ -3,34 +3,408 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitCloud Drive - Lưu trữ Đám Mây GitHub</title>
+  <title>GitCloud Drive - Kho Đám Mây</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col pb-10">
 
+  <!-- Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        <div class="flex items-center space-x-2">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-900 to-indigo-700 flex items-center justify-center text-white shadow-xs">
-            <i data-lucide="cloud" class="w-5 h-5"></i>
+    <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">GC</div>
+        <div>
+          <span class="font-bold text-sm text-slate-900 block leading-tight">GitCloud</span>
+          <span class="text-[10px] text-emerald-600 font-semibold block leading-tight">minhchaunap</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button id="btnSync" class="p-1.5 text-slate-600 hover:text-indigo-600 rounded-lg border border-slate-200 bg-white" title="Đồng bộ">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        </button>
+        <button id="btnToken" class="flex items-center space-x-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
+          <i data-lucide="key" class="w-3.5 h-3.5"></i>
+          <span>Token</span>
+          <span id="tokenDot" class="w-2 h-2 rounded-full bg-amber-500"></span>
+        </button>
+        <button id="btnNewFolder" class="flex items-center space-x-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700">
+          <i data-lucide="folder-plus" class="w-3.5 h-3.5 text-indigo-600"></i>
+          <span>Thư mục</span>
+        </button>
+        <button id="btnUpload" class="flex items-center space-x-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 text-white shadow-xs">
+          <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+          <span>Tải lên</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-4 space-y-4">
+    <!-- Breadcrumb -->
+    <div class="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 text-xs shadow-2xs">
+      <div id="breadcrumb" class="flex items-center space-x-1.5 font-medium text-slate-600"></div>
+      <span id="cloudStatus" class="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-semibold">Đám Mây Trực Tuyến</span>
+    </div>
+
+    <!-- Folders -->
+    <div id="folderContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div>
+
+    <!-- Upload Box -->
+    <div id="dropZone" class="p-6 border-2 border-dashed border-indigo-200 hover:border-indigo-500 bg-white rounded-2xl text-center cursor-pointer transition">
+      <input type="file" id="fileInput" multiple class="hidden" accept="image/*,video/*,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx">
+      <div class="flex flex-col items-center justify-center space-y-1">
+        <i data-lucide="upload-cloud" class="w-7 h-7 text-indigo-600 mb-1"></i>
+        <p class="text-xs font-semibold text-slate-800">Chạm để tải Ảnh, Video, Word, Excel, PowerPoint</p>
+        <p class="text-[11px] text-slate-400">Tự động đồng bộ lên đám mây cho mọi điện thoại & máy tính</p>
+      </div>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="flex items-center overflow-x-auto space-x-1.5 pb-1" id="tabs">
+      <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white" data-cat="all">Tất cả</button>
+      <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200" data-cat="image">Ảnh</button>
+      <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200" data-cat="video">Video</button>
+      <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200" data-cat="word">Word</button>
+      <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200" data-cat="excel">Excel</button>
+      <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200" data-cat="powerpoint">PowerPoint</button>
+    </div>
+
+    <!-- File Grid -->
+    <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
+
+    <div id="emptyView" class="hidden py-10 text-center bg-white border border-slate-200 rounded-2xl p-4">
+      <i data-lucide="cloud-off" class="w-8 h-8 text-slate-400 mx-auto mb-1.5"></i>
+      <p class="text-xs font-semibold text-slate-700">Chưa có tệp nào</p>
+      <p class="text-[11px] text-slate-400">Bấm nút "Tải lên" để lưu tệp lên đám mây.</p>
+    </div>
+  </main>
+
+  <!-- Modals -->
+  <!-- Token Modal -->
+  <div id="tokenModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-sm text-slate-900">Cấu hình Token GitHub</h3>
+        <button id="btnCloseToken" class="text-slate-400 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <p class="text-slate-600 text-[11px]">Nhập Token để máy này có quyền đẩy tệp lên kho <b>minhchaunap/my-storage-drive</b>:</p>
+      <input type="password" id="tokenInput" placeholder="Dán mã ghp_... vào đây" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+      <div class="flex items-center justify-between pt-2">
+        <a href="https://github.com/settings/tokens/new?scopes=repo&description=GitCloud+my-storage-drive" target="_blank" class="text-indigo-600 underline font-medium">Lấy mã Token</a>
+        <div class="space-x-1.5">
+          <button id="btnCancelToken" class="px-3 py-1.5 bg-slate-100 rounded-lg text-slate-600">Đóng</button>
+          <button id="btnSaveToken" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold">Lưu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Folder Modal -->
+  <div id="folderModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-sm text-slate-900">Tạo thư mục mới</h3>
+        <button id="btnCloseFolder" class="text-slate-400 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <input type="text" id="folderNameInput" placeholder="Tên thư mục..." class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none">
+      <div class="flex justify-end space-x-1.5 pt-2">
+        <button id="btnCancelFolder" class="px-3 py-1.5 bg-slate-100 rounded-lg text-slate-600">Huỷ</button>
+        <button id="btnSaveFolder" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold">Tạo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rename Modal -->
+  <div id="renameModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-sm text-slate-900">Đổi tên</h3>
+        <button id="btnCloseRename" class="text-slate-400 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <input type="text" id="renameInput" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none">
+      <div class="flex justify-end space-x-1.5 pt-2">
+        <button id="btnCancelRename" class="px-3 py-1.5 bg-slate-100 rounded-lg text-slate-600">Huỷ</button>
+        <button id="btnSaveRename" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-4 right-4 z-50 hidden bg-slate-900 text-white px-3.5 py-2 rounded-xl text-xs shadow-lg transition-all duration-300"></div>
+
+  <script>
+    const OWNER = 'minhchaunap';
+    const REPO = 'my-storage-drive';
+
+    const DB = {
+      token: localStorage.getItem('gc_token') || '',
+      folders: JSON.parse(localStorage.getItem('gc_folders') || '[{"id":"root","name":"Trang chủ","parent":null}]'),
+      curFolder: 'root',
+      curCat: 'all',
+      files: [],
+      target: null
+    };
+
+    function notify(msg, err=false) {
+      const t = document.getElementById('toast');
+      t.className = `fixed bottom-4 right-4 z-50 ${err ? 'bg-rose-600' : 'bg-slate-900'} text-white px-3.5 py-2 rounded-xl text-xs shadow-lg block`;
+      t.textContent = msg;
+      setTimeout(() => { t.className = 'hidden'; }, 2800);
+    }
+
+    function getCat(name) {
+      const ext = name.split('.').pop().toLowerCase();
+      if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return 'image';
+      if (['mp4','webm','mov'].includes(ext)) return 'video';
+      if (['doc','docx'].includes(ext)) return 'word';
+      if (['xls','xlsx','csv'].includes(ext)) return 'excel';
+      if (['ppt','pptx'].includes(ext)) return 'powerpoint';
+      return 'other';
+    }
+
+    async function syncCloud() {
+      notify('Đang tải tệp từ đám mây GitHub...');
+      try {
+        const headers = {};
+        if (DB.token) headers['Authorization'] = 'Bearer ' + DB.token;
+        
+        let res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/uploads`, { headers });
+        let list = [];
+        if (res.ok) {
+          list = await res.json();
+        } else {
+          let rootRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents`, { headers });
+          if (rootRes.ok) {
+            let data = await rootRes.json();
+            list = data.filter(x => x.name !== 'index.html' && x.name !== 'README.md' && x.name !== '.gitignore');
+          }
+        }
+
+        if (Array.isArray(list)) {
+          DB.files = list.filter(x => x.type === 'file').map(x => ({
+            id: x.sha,
+            folder: 'root',
+            name: x.name,
+            cat: getCat(x.name),
+            size: x.size || 0,
+            url: x.download_url
+          }));
+          render();
+          notify(`Đã đồng bộ ${DB.files.length} tệp từ đám mây!`);
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    async function upload(file) {
+      if (!DB.token) {
+        notify('Chưa nhập Token GitHub! Hãy nhập Token để lưu lên đám mây.', true);
+        document.getElementById('tokenModal').classList.remove('hidden');
+        return;
+      }
+
+      notify('Đang tải lên đám mây: ' + file.name);
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const b64 = e.target.result.split('base64,')[1];
+          const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/uploads/${encodeURIComponent(file.name)}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': 'Bearer ' + DB.token,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: 'Upload ' + file.name, content: b64, branch: 'main' })
+          });
+          if (res.ok) {
+            notify('Đã lưu thành công: ' + file.name);
+            setTimeout(syncCloud, 1000);
+          } else {
+            notify('Lỗi tải lên. Hãy kiểm tra lại Token.', true);
+          }
+        } catch (err) {
+          notify('Lỗi kết nối mạng.', true);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function render() {
+      document.getElementById('tokenDot').className = DB.token ? 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse' : 'w-2 h-2 rounded-full bg-amber-500';
+
+      const curF = DB.folders.find(x => x.id === DB.curFolder) || DB.folders[0];
+      let crumbs = [];
+      let c = curF;
+      while (c) {
+        crumbs.unshift(c);
+        if (!c.parent) break;
+        c = DB.folders.find(x => x.id === c.parent);
+      }
+      document.getElementById('breadcrumb').innerHTML = crumbs.map((x, i) => {
+        if (i === crumbs.length - 1) return `<span class="font-bold text-slate-800">${x.name}</span>`;
+        return `<button class="hover:text-indigo-600" data-nav="${x.id}">${x.name}</button><span>/</span>`;
+      }).join('');
+
+      const subs = DB.folders.filter(x => x.parent === DB.curFolder);
+      const fCont = document.getElementById('folderContainer');
+      fCont.innerHTML = subs.map(x => `
+        <div class="bg-white p-2.5 rounded-xl border border-slate-200 flex items-center justify-between group cursor-pointer hover:border-indigo-400" data-fcard="${x.id}">
+          <div class="flex items-center space-x-2 truncate">
+            <i data-lucide="folder" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+            <span class="font-semibold text-xs text-slate-800 truncate">${x.name}</span>
           </div>
-          <div>
-            <span class="font-bold text-base text-slate-900 tracking-tight">GitCloud</span>
-            <span class="text-[10px] text-emerald-600 font-semibold block leading-none">minhchaunap</span>
+          <div class="flex items-center space-x-1" onclick="event.stopPropagation()">
+            <button class="p-1 text-slate-400 hover:text-amber-600" data-fren="${x.id}"><i data-lucide="edit-3" class="w-3 h-3"></i></button>
+            <button class="p-1 text-slate-400 hover:text-rose-600" data-fdel="${x.id}"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
           </div>
         </div>
+      `).join('');
 
-        <div class="flex items-center space-x-1.5 sm:space-x-2">
-          <button id="btnSyncCloud" class="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-slate-200 transition" title="Làm mới đám mây">
-            <i data-lucide="refresh-cw" id="syncIcon" class="w-4 h-4"></i>
-          </button>
-          <button id="btnOpenGitHubSettings" class="flex items-center space-x-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-2xs">
-            <i data-lucide="key" class="w-3.5 h-3.5"></i>
-            <span>Token</span>
-            <span id="githubStatusDot" class="w-2 h-2 rounded-full bg-amber-500"></span>
-          </button>
-          <button id="btnNewFolder
+      const list = DB.files.filter(f => (DB.curCat === 'all' || f.cat === DB.curCat));
+      const grid = document.getElementById('fileGrid');
+      const emp = document.getElementById('emptyView');
+
+      if (list.length === 0 && subs.length === 0) {
+        emp.classList.remove('hidden');
+        grid.innerHTML = '';
+      } else {
+        emp.classList.add('hidden');
+        grid.innerHTML = list.map(f => {
+          let preview = '';
+          if (f.cat === 'image') {
+            preview = `<div class="h-28 bg-slate-100 rounded-lg overflow-hidden mb-2"><img src="${f.url}" class="w-full h-full object-cover"></div>`;
+          }
+          return `
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+              <div>
+                ${preview}
+                <div class="font-semibold text-xs text-slate-900 truncate" title="${f.name}">${f.name}</div>
+                <div class="text-[10px] text-slate-400 mb-2">${(f.size/1024).toFixed(1)} KB • <span class="text-emerald-600 font-medium">Đám mây</span></div>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 uppercase">${f.cat}</span>
+                <div class="flex items-center space-x-1">
+                  <button class="p-1 text-slate-400 hover:text-amber-600" data-ren="${f.id}"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                  <a href="${f.url}" target="_blank" download="${f.name}" class="p-1 text-slate-400 hover:text-emerald-600"><i data-lucide="download" class="w-3.5 h-3.5"></i></a>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      lucide.createIcons();
+    }
+
+    document.getElementById('btnSync').addEventListener('click', syncCloud);
+    document.getElementById('btnToken').addEventListener('click', () => {
+      document.getElementById('tokenInput').value = DB.token;
+      document.getElementById('tokenModal').classList.remove('hidden');
+    });
+    document.getElementById('btnCloseToken').addEventListener('click', () => document.getElementById('tokenModal').classList.add('hidden'));
+    document.getElementById('btnCancelToken').addEventListener('click', () => document.getElementById('tokenModal').classList.add('hidden'));
+    document.getElementById('btnSaveToken').addEventListener('click', () => {
+      DB.token = document.getElementById('tokenInput').value.trim();
+      localStorage.setItem('gc_token', DB.token);
+      document.getElementById('tokenModal').classList.add('hidden');
+      notify('Đã lưu Token thành công!');
+      render();
+      syncCloud();
+    });
+
+    document.getElementById('btnNewFolder').addEventListener('click', () => {
+      document.getElementById('folderNameInput').value = '';
+      document.getElementById('folderModal').classList.remove('hidden');
+    });
+    document.getElementById('btnCloseFolder').addEventListener('click', () => document.getElementById('folderModal').classList.add('hidden'));
+    document.getElementById('btnCancelFolder').addEventListener('click', () => document.getElementById('folderModal').classList.add('hidden'));
+    document.getElementById('btnSaveFolder').addEventListener('click', () => {
+      const n = document.getElementById('folderNameInput').value.trim();
+      if (!n) return;
+      DB.folders.push({ id: 'f-' + Date.now(), name: n, parent: DB.curFolder });
+      localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
+      document.getElementById('folderModal').classList.add('hidden');
+      render();
+    });
+
+    document.getElementById('breadcrumb').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-nav]');
+      if (btn) { DB.curFolder = btn.dataset.nav; render(); }
+    });
+
+    document.getElementById('folderContainer').addEventListener('click', (e) => {
+      const ren = e.target.closest('[data-fren]');
+      if (ren) {
+        DB.target = { type: 'folder', id: ren.dataset.fren };
+        const f = DB.folders.find(x => x.id === ren.dataset.fren);
+        document.getElementById('renameInput').value = f ? f.name : '';
+        document.getElementById('renameModal').classList.remove('hidden');
+        return;
+      }
+      const del = e.target.closest('[data-fdel]');
+      if (del) {
+        DB.folders = DB.folders.filter(x => x.id !== del.dataset.fdel);
+        localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
+        render();
+        return;
+      }
+      const card = e.target.closest('[data-fcard]');
+      if (card) { DB.curFolder = card.dataset.fcard; render(); }
+    });
+
+    document.getElementById('fileGrid').addEventListener('click', (e) => {
+      const ren = e.target.closest('[data-ren]');
+      if (ren) {
+        DB.target = { type: 'file', id: ren.dataset.ren };
+        const f = DB.files.find(x => x.id === ren.dataset.ren);
+        document.getElementById('renameInput').value = f ? f.name : '';
+        document.getElementById('renameModal').classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('btnCloseRename').addEventListener('click', () => document.getElementById('renameModal').classList.add('hidden'));
+    document.getElementById('btnCancelRename').addEventListener('click', () => document.getElementById('renameModal').classList.add('hidden'));
+    document.getElementById('btnSaveRename').addEventListener('click', () => {
+      const v = document.getElementById('renameInput').value.trim();
+      if (v && DB.target) {
+        if (DB.target.type === 'file') {
+          const f = DB.files.find(x => x.id === DB.target.id);
+          if (f) { f.name = v; f.cat = getCat(v); }
+        } else {
+          const f = DB.folders.find(x => x.id === DB.target.id);
+          if (f) { f.name = v; localStorage.setItem('gc_folders', JSON.stringify(DB.folders)); }
+        }
+        render();
+      }
+      document.getElementById('renameModal').classList.add('hidden');
+    });
+
+    const fInput = document.getElementById('fileInput');
+    document.getElementById('btnUpload').addEventListener('click', () => fInput.click());
+    document.getElementById('dropZone').addEventListener('click', () => fInput.click());
+    fInput.addEventListener('change', (e) => {
+      Array.from(e.target.files).forEach(upload);
+      fInput.value = '';
+    });
+
+    document.getElementById('tabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab-btn');
+      if (!btn) return;
+      document.querySelectorAll('.tab-btn').forEach(x => x.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200');
+      btn.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white';
+      DB.curCat = btn.dataset.cat;
+      render();
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      render();
+      syncCloud();
+    });
+  </script>
+</body>
+</html>
