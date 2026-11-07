@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitCloud Drive - Lưu Trữ Đám Mây</title>
+  <title>GitCloud Drive - Kho Đám Mây GitHub</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -20,7 +20,7 @@
           <span class="text-[10px] text-emerald-600 font-semibold block leading-tight">minhchaunap</span>
         </div>
       </div>
-      <div class="flex items-center space-x-1.5 sm:space-x-2">
+      <div class="flex items-center space-x-1 sm:space-x-2">
         <button id="btnSync" class="p-2 text-slate-600 hover:text-indigo-600 rounded-lg border border-slate-200 bg-white" title="Làm mới đám mây">
           <i data-lucide="refresh-cw" id="syncIcon" class="w-4 h-4"></i>
         </button>
@@ -29,7 +29,11 @@
           <span>Token</span>
           <span id="tokenDot" class="w-2 h-2 rounded-full bg-amber-500"></span>
         </button>
-        <button id="btnUpload" class="flex items-center space-x-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 text-white shadow-xs">
+        <button id="btnNewFolderHeader" class="flex items-center space-x-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700">
+          <i data-lucide="folder-plus" class="w-3.5 h-3.5 text-indigo-600"></i>
+          <span>+ Thư mục</span>
+        </button>
+        <button id="btnUpload" class="flex items-center space-x-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs">
           <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
           <span>Tải lên</span>
         </button>
@@ -37,31 +41,39 @@
     </div>
   </header>
 
-  <div id="loadingBar" class="hidden bg-amber-500 text-white text-[11px] font-semibold text-center py-1.5 animate-pulse">
+  <div id="loadingBar" class="hidden bg-indigo-600 text-white text-[11px] font-semibold text-center py-1.5 animate-pulse">
     <span id="loadingText">Đang tải tệp lên đám mây GitHub, vui lòng chờ...</span>
   </div>
 
   <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-4 space-y-4">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 gap-2 text-xs shadow-2xs">
-      <div class="flex items-center space-x-1.5 text-slate-700 font-medium">
-        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span>Đám mây: <b>minhchaunap/my-storage-drive</b></span>
-      </div>
-      <a href="https://github.com/minhchaunap/my-storage-drive/upload/main/uploads" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-semibold underline flex items-center space-x-1">
-        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-        <span>Tải trực tiếp qua web GitHub (dành cho video nặng)</span>
-      </a>
+    <div class="flex items-center justify-between bg-white px-3.5 py-2 rounded-xl border border-slate-200 text-xs shadow-2xs">
+      <div id="breadcrumb" class="flex items-center space-x-1.5 font-medium text-slate-600 overflow-x-auto"></div>
+      <button id="btnNewFolderInline" class="flex items-center space-x-1 text-xs text-indigo-600 font-semibold px-2 py-1 rounded hover:bg-indigo-50 shrink-0">
+        <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>
+        <span>Tạo thư mục con</span>
+      </button>
     </div>
 
-    <div id="dropZone" class="p-6 border-2 border-dashed border-indigo-200 hover:border-indigo-500 bg-white rounded-2xl text-center cursor-pointer transition">
+    <div id="folderSection">
+      <div id="folderContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div>
+    </div>
+
+    <div id="dropZone" class="p-5 border-2 border-dashed border-indigo-200 hover:border-indigo-500 bg-white rounded-2xl text-center cursor-pointer transition">
       <input type="file" id="fileInput" multiple class="hidden" accept="image/*,video/*,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx">
-      <div class="flex flex-col items-center justify-center space-y-1.5">
-        <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
-          <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+      <div class="flex flex-col items-center justify-center space-y-1">
+        <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <i data-lucide="upload-cloud" class="w-5 h-5"></i>
         </div>
-        <p class="text-xs font-semibold text-slate-800">Chạm vào đây để chọn Ảnh, Video, Word, Excel, PowerPoint</p>
-        <p class="text-[11px] text-slate-400">Ảnh chụp nặng sẽ được tự động nén nhẹ để tải cực nhanh không bị đơ máy</p>
+        <p class="text-xs font-semibold text-slate-800">Chạm để chọn Ảnh, Video, Word, Excel, PowerPoint</p>
+        <p class="text-[11px] text-slate-400">Tự động nén ảnh nhẹ để truyền qua mạng cực nhanh, không nghẽn</p>
       </div>
+    </div>
+
+    <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-2.5 text-xs flex items-center justify-between">
+      <span class="text-indigo-900 text-[11px]">Dành cho video nặng hoặc tải nhiều tệp cùng lúc:</span>
+      <a href="https://github.com/minhchaunap/my-storage-drive/upload/main/uploads" target="_blank" class="px-2.5 py-1 bg-indigo-600 text-white rounded-lg font-semibold text-[11px] hover:bg-indigo-700 shrink-0">
+        Tải thẳng qua GitHub &rarr;
+      </a>
     </div>
 
     <div class="flex items-center overflow-x-auto space-x-1.5 pb-1" id="tabs">
@@ -75,15 +87,14 @@
 
     <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
 
-    <div id="emptyView" class="hidden py-12 text-center bg-white border border-slate-200 rounded-2xl p-6">
-      <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-2">
-        <i data-lucide="cloud-off" class="w-6 h-6"></i>
-      </div>
-      <p class="text-xs font-semibold text-slate-700">Chưa có tệp nào trên đám mây</p>
-      <p class="text-[11px] text-slate-400 mt-0.5">Bấm nút "Tải lên" ở trên để đưa ảnh hoặc tài liệu lên nhé!</p>
+    <div id="emptyView" class="hidden py-10 text-center bg-white border border-slate-200 rounded-2xl p-4">
+      <i data-lucide="cloud-off" class="w-8 h-8 text-slate-400 mx-auto mb-1.5"></i>
+      <p class="text-xs font-semibold text-slate-700">Chưa có tệp nào trong mục này</p>
+      <p class="text-[11px] text-slate-400">Bấm nút "Tải lên" để đưa ảnh hoặc tài liệu lên nhé!</p>
     </div>
   </main>
 
+  <!-- Modal Token -->
   <div id="tokenModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
       <div class="flex items-center justify-between pb-2 border-b border-slate-100">
@@ -91,10 +102,9 @@
         <button id="btnCloseToken" class="text-slate-400 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <p class="text-slate-600 text-[11px] leading-relaxed">
-        Nhập Token một lần để cấp quyền lưu file vào kho <b>minhchaunap/my-storage-drive</b>:
+        Nhập Token một lần để có quyền đẩy tệp vào kho <b>minhchaunap/my-storage-drive</b>:
       </p>
       <input type="password" id="tokenInput" placeholder="Dán mã ghp_... vào đây" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
-      
       <div class="flex items-center justify-between pt-2">
         <a href="https://github.com/settings/tokens/new?scopes=repo&description=GitCloud+my-storage-drive" target="_blank" class="text-indigo-600 underline font-medium">Bấm lấy mã Token</a>
         <div class="space-x-1.5">
@@ -105,7 +115,37 @@
     </div>
   </div>
 
-  <div id="toast" class="fixed bottom-4 right-4 z-50 hidden bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs shadow-lg transition-all"></div>
+  <!-- Modal Tạo Thư Mục -->
+  <div id="folderModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-sm text-slate-900">Tạo thư mục mới</h3>
+        <button id="btnCloseFolder" class="text-slate-400 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <input type="text" id="folderNameInput" placeholder="Ví dụ: Hình ảnh, Hợp đồng, Slide..." class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+      <div class="flex justify-end space-x-1.5 pt-2">
+        <button id="btnCancelFolder" class="px-3 py-1.5 bg-slate-100 rounded-lg text-slate-600">Huỷ</button>
+        <button id="btnSaveFolder" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold">Tạo thư mục</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Đổi Tên -->
+  <div id="renameModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-sm text-slate-900">Đổi tên</h3>
+        <button id="btnCloseRename" class="text-slate-400 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <input type="text" id="renameInput" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+      <div class="flex justify-end space-x-1.5 pt-2">
+        <button id="btnCancelRename" class="px-3 py-1.5 bg-slate-100 rounded-lg text-slate-600">Huỷ</button>
+        <button id="btnSaveRename" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold">Lưu tên mới</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-4 right-4 z-50 hidden bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs shadow-lg transition-all duration-300"></div>
 
   <script>
     const OWNER = 'minhchaunap';
@@ -113,15 +153,18 @@
 
     const DB = {
       token: localStorage.getItem('gc_token') || '',
+      folders: JSON.parse(localStorage.getItem('gc_folders') || '[{"id":"root","name":"Trang chủ","parent":null}]'),
+      curFolder: 'root',
       curCat: 'all',
-      files: []
+      files: [],
+      target: null
     };
 
     function notify(msg, isError = false) {
       const t = document.getElementById('toast');
       t.className = `fixed bottom-4 right-4 z-50 ${isError ? 'bg-rose-600' : 'bg-slate-900'} text-white px-4 py-2.5 rounded-xl text-xs shadow-lg block`;
       t.textContent = msg;
-      setTimeout(() => { t.className = 'hidden'; }, 3500);
+      setTimeout(() => { t.className = 'hidden'; }, 3800);
     }
 
     function setLoading(isLoading, text = '') {
@@ -145,9 +188,9 @@
       return 'other';
     }
 
-    function compressImageIfNeeded(file) {
+    function compressImage(file) {
       return new Promise((resolve) => {
-        if (!file.type.startsWith('image/') || file.size < 1024 * 1024) {
+        if (!file.type.startsWith('image/') || file.size < 500 * 1024) {
           resolve(file);
           return;
         }
@@ -158,7 +201,7 @@
             const canvas = document.createElement('canvas');
             let w = img.width;
             let h = img.height;
-            const maxDim = 1920;
+            const maxDim = 1600;
             if (w > maxDim || h > maxDim) {
               if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
               else { w = Math.round((w * maxDim) / h); h = maxDim; }
@@ -173,10 +216,12 @@
               } else {
                 resolve(file);
               }
-            }, 'image/jpeg', 0.82);
+            }, 'image/jpeg', 0.8);
           };
+          img.onerror = () => resolve(file);
           img.src = e.target.result;
         };
+        reader.onerror = () => resolve(file);
         reader.readAsDataURL(file);
       });
     }
@@ -186,25 +231,26 @@
       if (icon) icon.classList.add('animate-spin');
 
       try {
-        const headers = {};
-        if (DB.token) headers['Authorization'] = 'Bearer ' + DB.token;
+        const headers = { 'Accept': 'application/vnd.github.v3+json' };
+        if (DB.token) headers['Authorization'] = 'token ' + DB.token;
 
         let res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/uploads`, { headers });
-        let items = [];
+        let list = [];
 
         if (res.ok) {
-          items = await res.json();
+          list = await res.json();
         } else {
           let rootRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents`, { headers });
           if (rootRes.ok) {
             let rootData = await rootRes.json();
-            items = rootData.filter(i => i.name !== 'index.html' && i.name !== 'README.md' && i.name !== '.gitignore');
+            list = rootData.filter(i => i.name !== 'index.html' && i.name !== 'README.md' && i.name !== '.gitignore');
           }
         }
 
-        if (Array.isArray(items)) {
-          DB.files = items.filter(i => i.type === 'file').map(i => ({
+        if (Array.isArray(list)) {
+          DB.files = list.filter(i => i.type === 'file').map(i => ({
             id: i.sha,
+            folder: 'root',
             name: i.name,
             cat: getCat(i.name),
             size: i.size || 0,
@@ -213,10 +259,27 @@
           render();
         }
       } catch (err) {
-        console.warn('Sync warning:', err);
+        console.warn(err);
       } finally {
         if (icon) icon.classList.remove('animate-spin');
       }
+    }
+
+    async function getExistingSha(cleanName) {
+      if (!DB.token) return null;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/uploads/${cleanName}`, {
+          headers: {
+            'Authorization': 'token ' + DB.token,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return data.sha || null;
+        }
+      } catch (e) {}
+      return null;
     }
 
     async function uploadSingleFile(rawFile) {
@@ -226,30 +289,36 @@
         return;
       }
 
-      setLoading(true, `Đang xử lý "${rawFile.name}"...`);
+      setLoading(true, `Đang chuẩn bị "${rawFile.name}"...`);
 
       try {
-        const fileToUpload = await compressImageIfNeeded(rawFile);
-        setLoading(true, `Đang gửi "${fileToUpload.name}" lên đám mây GitHub...`);
+        const fileToUpload = await compressImage(rawFile);
+        const cleanName = fileToUpload.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+        setLoading(true, `Đang kiểm tra & tải "${cleanName}" lên đám mây...`);
+        const existingSha = await getExistingSha(cleanName);
 
         const reader = new FileReader();
         reader.onload = async (e) => {
           try {
             const b64 = e.target.result.split('base64,')[1];
-            const cleanName = fileToUpload.name.replace(/[^a-zA-Z0-9._-]/g, '_');
             const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/uploads/${cleanName}`;
+
+            const payload = {
+              message: 'Upload ' + cleanName + ' via GitCloud Drive',
+              content: b64,
+              branch: 'main'
+            };
+            if (existingSha) payload.sha = existingSha;
 
             const res = await fetch(apiUrl, {
               method: 'PUT',
               headers: {
-                'Authorization': 'Bearer ' + DB.token,
+                'Authorization': 'token ' + DB.token,
+                'Accept': 'application/vnd.github.v3+json',
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({
-                message: 'Upload ' + cleanName + ' via GitCloud Drive',
-                content: b64,
-                branch: 'main'
-              })
+              body: JSON.stringify(payload)
             });
 
             setLoading(false);
@@ -259,106 +328,63 @@
               setTimeout(syncCloud, 1000);
             } else {
               const err = await res.json().catch(() => ({}));
-              notify(`Lỗi từ GitHub: ${err.message || 'Kiểm tra token hoặc dung lượng file'}`, true);
+              notify(`GitHub từ chối: ${err.message || 'Kiểm tra token hoặc quyền repo'}`, true);
             }
           } catch (netErr) {
             setLoading(false);
-            notify('Lỗi kết nối mạng khi tải lên.', true);
+            notify('Lỗi kết nối GitHub. Vui lòng kiểm tra lại Token hoặc mạng.', true);
           }
         };
         reader.readAsDataURL(fileToUpload);
 
-      } catch (e) {
+      } catch (err) {
         setLoading(false);
-        notify('Không thể đọc tệp này.', true);
+        notify('Lỗi xử lý file.', true);
       }
     }
 
     function render() {
       document.getElementById('tokenDot').className = DB.token ? 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse' : 'w-2 h-2 rounded-full bg-amber-500';
 
+      const curF = DB.folders.find(x => x.id === DB.curFolder) || DB.folders[0];
+      let crumbs = [];
+      let c = curF;
+      while (c) {
+        crumbs.unshift(c);
+        if (!c.parent) break;
+        c = DB.folders.find(x => x.id === c.parent);
+      }
+      document.getElementById('breadcrumb').innerHTML = crumbs.map((x, i) => {
+        if (i === crumbs.length - 1) return `<span class="font-bold text-slate-800 flex items-center"><i data-lucide="folder-open" class="w-3.5 h-3.5 mr-1 text-indigo-600"></i>${x.name}</span>`;
+        return `<button class="hover:text-indigo-600" data-nav="${x.id}">${x.name}</button><span class="text-slate-300">/</span>`;
+      }).join('');
+
+      const subs = DB.folders.filter(x => x.parent === DB.curFolder);
+      const fCont = document.getElementById('folderContainer');
+      fCont.innerHTML = subs.map(x => `
+        <div class="bg-white p-2.5 rounded-xl border border-slate-200 flex items-center justify-between group cursor-pointer hover:border-indigo-400" data-fcard="${x.id}">
+          <div class="flex items-center space-x-2 truncate">
+            <i data-lucide="folder" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+            <span class="font-semibold text-xs text-slate-800 truncate">${x.name}</span>
+          </div>
+          <div class="flex items-center space-x-1" onclick="event.stopPropagation()">
+            <button class="p-1 text-slate-400 hover:text-amber-600" data-fren="${x.id}" title="Đổi tên"><i data-lucide="edit-3" class="w-3 h-3"></i></button>
+            <button class="p-1 text-slate-400 hover:text-rose-600" data-fdel="${x.id}" title="Xoá"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+          </div>
+        </div>
+      `).join('');
+
       const list = DB.files.filter(f => (DB.curCat === 'all' || f.cat === DB.curCat));
       const grid = document.getElementById('fileGrid');
-      const empty = document.getElementById('emptyView');
+      const emp = document.getElementById('emptyView');
 
-      if (list.length === 0) {
-        empty.classList.remove('hidden');
+      if (list.length === 0 && subs.length === 0) {
+        emp.classList.remove('hidden');
         grid.innerHTML = '';
       } else {
-        empty.classList.add('hidden');
+        emp.classList.add('hidden');
         grid.innerHTML = list.map(f => {
           let preview = '';
           if (f.cat === 'image') {
             preview = `<div class="h-32 bg-slate-100 rounded-lg overflow-hidden mb-2"><img src="${f.url}" class="w-full h-full object-cover"></div>`;
           } else if (f.cat === 'video') {
-            preview = `<div class="h-32 bg-slate-900 rounded-lg flex items-center justify-center text-white mb-2"><i data-lucide="play-circle" class="w-8 h-8"></i></div>`;
-          }
-
-          return `
-            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-              <div>
-                ${preview}
-                <div class="font-semibold text-xs text-slate-900 truncate" title="${f.name}">${f.name}</div>
-                <div class="text-[10px] text-slate-400 mb-2">${(f.size/1024).toFixed(1)} KB • <span class="text-emerald-600 font-medium">Đám mây</span></div>
-              </div>
-              <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 uppercase">${f.cat}</span>
-                <a href="${f.url}" target="_blank" download="${f.name}" class="flex items-center space-x-1 text-xs text-indigo-600 font-semibold hover:text-indigo-800">
-                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                  <span>Tải về</span>
-                </a>
-              </div>
-            </div>
-          `;
-        }).join('');
-      }
-
-      lucide.createIcons();
-    }
-
-    document.getElementById('btnSync').addEventListener('click', syncCloud);
-
-    document.getElementById('btnToken').addEventListener('click', () => {
-      document.getElementById('tokenInput').value = DB.token;
-      document.getElementById('tokenModal').classList.remove('hidden');
-    });
-    document.getElementById('btnCloseToken').addEventListener('click', () => document.getElementById('tokenModal').classList.add('hidden'));
-    document.getElementById('btnCancelToken').addEventListener('click', () => document.getElementById('tokenModal').classList.add('hidden'));
-    
-    document.getElementById('btnSaveToken').addEventListener('click', () => {
-      DB.token = document.getElementById('tokenInput').value.trim();
-      localStorage.setItem('gc_token', DB.token);
-      document.getElementById('tokenModal').classList.add('hidden');
-      notify('Đã lưu Token thành công!');
-      render();
-      syncCloud();
-    });
-
-    const fInput = document.getElementById('fileInput');
-    document.getElementById('btnUpload').addEventListener('click', () => fInput.click());
-    document.getElementById('dropZone').addEventListener('click', () => fInput.click());
-
-    fInput.addEventListener('change', (e) => {
-      const files = Array.from(e.target.files);
-      if (files.length > 0) {
-        uploadSingleFile(files[0]);
-      }
-      fInput.value = '';
-    });
-
-    document.getElementById('tabs').addEventListener('click', (e) => {
-      const btn = e.target.closest('.tab-btn');
-      if (!btn) return;
-      document.querySelectorAll('.tab-btn').forEach(x => x.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200');
-      btn.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white';
-      DB.curCat = btn.dataset.cat;
-      render();
-    });
-
-    window.addEventListener('DOMContentLoaded', () => {
-      render();
-      syncCloud();
-    });
-  </script>
-</body>
-</html>
