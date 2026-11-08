@@ -1,250 +1,825 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitCloud Drive - minhchaunap</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    body { font-family: 'Inter', sans-serif; }
-    .word-paper { min-height: 220px; outline: none; }
-    .word-paper:empty:before { content: attr(data-placeholder); color: #94a3b8; }
-  </style>
-</head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col pb-16">
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-    <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-      <div class="flex items-center space-x-2">
-        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-xs">
-          <i data-lucide="cloud" class="w-4 h-4"></i>
-        </div>
-        <div>
-          <span class="font-bold text-sm text-slate-900 block leading-tight">GitCloud Drive</span>
-          <span class="text-[10px] text-emerald-600 font-semibold block leading-tight">minhchaunap</span>
-        </div>
-      </div>
-      <div class="flex items-center space-x-1 sm:space-x-2">
-        <button id="btnSync" class="p-2 text-slate-600 hover:text-indigo-600 rounded-lg border border-slate-200 bg-white" title="Làm mới đám mây">
-          <i data-lucide="refresh-cw" id="syncIcon" class="w-4 h-4"></i>
-        </button>
-        <button id="btnAiStudio" class="flex items-center space-x-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs hover:opacity-95">
-          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-          <span>Trợ Lý AI</span>
-        </button>
-        <button id="btnToken" class="flex items-center space-x-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
-          <i data-lucide="key" class="w-3.5 h-3.5"></i>
-          <span class="hidden sm:inline">Token</span>
-          <span id="tokenDot" class="w-2 h-2 rounded-full bg-amber-500"></span>
-        </button>
-        <button id="btnNewFolderHeader" class="flex items-center space-x-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700">
-          <i data-lucide="folder-plus" class="w-3.5 h-3.5 text-indigo-600"></i>
-          <span>+ Thư mục</span>
-        </button>
-      </div>
-    </div>
-  </header>
+  <script>
+    const OWNER = 'minhchaunap';
+    const REPO = 'my-storage-drive';
 
-  <div id="loadingBar" class="hidden fixed top-14 left-0 right-0 z-40 bg-indigo-600 text-white text-xs py-1 px-4 text-center flex items-center justify-center space-x-2 shadow-sm">
-    <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i>
-    <span id="loadingText">Đang xử lý dữ liệu...</span>
-  </div>
+    function sanitizeToken(raw) {
+      if (!raw) return '';
+      let s = '';
+      for (let i = 0; i < raw.length; i++) {
+        const c = raw.charCodeAt(i);
+        if ((c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95) s += raw[i];
+      }
+      return s.trim();
+    }
 
-  <main class="max-w-4xl mx-auto px-4 py-4 w-full flex-1 flex flex-col space-y-4">
-    <!-- Breadcrumb & Tạo thư mục con -->
-    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-      <div id="breadcrumb" class="flex items-center space-x-2 text-xs text-slate-600 overflow-x-auto py-1"></div>
-      <button id="btnNewFolderInline" class="shrink-0 ml-2 flex items-center space-x-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200">
-        <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>
-        <span>Tạo thư mục con</span>
-      </button>
-    </div>
+    const idb = {
+      db: null,
+      init() {
+        return new Promise((res) => {
+          const req = indexedDB.open('GitCloudPermanentDB_v6', 1);
+          req.onupgradeneeded = (e) => {
+            const d = e.target.result;
+            if (!d.objectStoreNames.contains('files')) d.createObjectStore('files', { keyPath: 'id' });
+            if (!d.objectStoreNames.contains('folders')) d.createObjectStore('folders', { keyPath: 'id' });
+          };
+          req.onsuccess = (e) => { idb.db = e.target.result; res(); };
+          req.onerror = () => res();
+        });
+      },
+      getAll(st) {
+        return new Promise((res) => {
+          if (!idb.db) return res([]);
+          try {
+            const tx = idb.db.transaction(st, 'readonly');
+            const req = tx.objectStore(st).getAll();
+            req.onsuccess = () => res(req.result || []);
+            req.onerror = () => res([]);
+          } catch(e) { res([]); }
+        });
+      },
+      put(item, st) {
+        return new Promise((res) => {
+          if (!idb.db) return res();
+          try {
+            const tx = idb.db.transaction(st, 'readwrite');
+            tx.objectStore(st).put(item);
+            tx.oncomplete = () => res();
+            tx.onerror = () => res();
+          } catch(e) { res(); }
+        });
+      },
+      delete(id, st) {
+        return new Promise((res) => {
+          if (!idb.db) return res();
+          try {
+            const tx = idb.db.transaction(st, 'readwrite');
+            tx.objectStore(st).delete(id);
+            tx.oncomplete = () => res();
+            tx.onerror = () => res();
+          } catch(e) { res(); }
+        });
+      }
+    };
 
-    <!-- Danh sách Thư Mục Con -->
-    <div id="folderSection" class="space-y-2">
-      <div id="folderContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5"></div>
-    </div>
+    const DEFAULT_PROMPTS = [
+      { id: 'p1', title: 'Tách tóc & chi tiết mịn (ChatGPT)', cat: 'image', content: 'Isolate the main subject from this image with pixel-perfect edge detection. Remove the background completely and make it 100% transparent PNG. Preserve hair and fine contours with zero color fringing.' },
+      { id: 'p2', title: 'Tách sản phẩm thương mại (ChatGPT)', cat: 'image', content: 'Extract the commercial product in the foreground, perfectly cut out with transparent background PNG, smooth clean studio product cutout, no background shadows.' },
+      { id: 'p3', title: 'Góc quay Cinematic Drone FPV (AI Flow)', cat: 'video', content: 'Cinematic slow drone flight moving forward smoothly, dramatic lighting, photorealistic 4k, hyper-detailed, fluid camera motion, 60fps cinematic rendering.' },
+      { id: 'p4', title: 'Chuyển động nhân vật sống động (AI Flow)', cat: 'video', content: 'A dynamic character motion with subtle natural breathing and blinking, soft ambient lighting, high realism, consistent face details, cinematic shallow depth of field.' }
+    ];
 
-    <!-- Upload Box -->
-    <div id="dropZone" class="border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/40 rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center group">
-      <input type="file" id="fileInput" class="hidden" multiple accept="image/*,video/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
-      <div class="w-12 h-12 rounded-2xl bg-white shadow-xs border border-indigo-100 flex items-center justify-center text-indigo-600 mb-2 group-hover:scale-105 transition">
-        <i data-lucide="upload-cloud" class="w-6 h-6"></i>
-      </div>
-      <h3 class="font-bold text-sm text-slate-800 mb-1">Chạm vào đây để chọn Ảnh, Video, Word, Excel, PowerPoint</h3>
-      <p class="text-xs text-slate-500">Tự động nạp vào thư mục đang mở & đẩy lên đám mây GitHub</p>
-    </div>
+    const DB = {
+      token: sanitizeToken(localStorage.getItem('gc_token') || ''),
+      curFolder: 'root',
+      curCat: 'all',
+      folders: JSON.parse(localStorage.getItem('gc_folders') || '[{"id":"root","name":"Trang chủ","parent":null}]'),
+      files: [],
+      prompts: JSON.parse(localStorage.getItem('gc_prompts') || JSON.stringify(DEFAULT_PROMPTS)),
+      target: null,
+      pendingDeleteFolderId: null
+    };
 
-    <!-- Tabs -->
-    <div class="flex items-center space-x-1.5 overflow-x-auto pb-1" id="tabs">
-      <button class="tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white shadow-xs" data-cat="all">Tất cả</button>
-      <button class="tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50" data-cat="image">Ảnh</button>
-      <button class="tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50" data-cat="video">Video</button>
-      <button class="tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center space-x-1" data-cat="word">
-        <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-600"></i>
-        <span>Word</span>
-      </button>
-      <button class="tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50" data-cat="excel">Excel</button>
-      <button class="tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50" data-cat="ppt">PowerPoint</button>
-    </div>
+    function notify(msg, isErr = false) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl shadow-xl text-xs font-semibold text-white ${isErr ? 'bg-rose-600' : 'bg-slate-900'} flex items-center space-x-2`;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 3500);
+    }
 
-    <!-- Word Editor -->
-    <div id="wordEditorSection" class="hidden bg-white rounded-2xl border-2 border-blue-400 p-4 shadow-md space-y-3">
-      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-        <div class="flex items-center space-x-2">
-          <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm">W</div>
-          <div>
-            <h3 class="font-bold text-sm text-slate-900">Soạn Thảo Văn Bản Word Trực Tiếp</h3>
-            <p id="wordFolderTargetText" class="text-[11px] text-blue-600 font-medium"></p>
+    function setLoading(isLoading, text = '') {
+      const bar = document.getElementById('loadingBar');
+      document.getElementById('loadingText').textContent = text || 'Đang xử lý...';
+      bar.classList.toggle('hidden', !isLoading);
+    }
+
+    function getCat(name) {
+      const ext = name.split('.').pop().toLowerCase();
+      if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return 'image';
+      if (['mp4','webm','mov','avi'].includes(ext)) return 'video';
+      if (['doc','docx'].includes(ext)) return 'word';
+      if (['xls','xlsx','csv'].includes(ext)) return 'excel';
+      if (['ppt','pptx'].includes(ext)) return 'ppt';
+      return 'other';
+    }
+
+    async function getBase64Data(url) {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const r = reader.result;
+          res(r.includes('base64,') ? r.split('base64,')[1] : r);
+        };
+        reader.onerror = rej;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function slugify(str) {
+      if (!str) return '';
+      return str.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '') || 'folder';
+    }
+
+    function slugifyFileName(name) {
+      if (!name) return 'file_' + Date.now();
+      const dot = name.lastIndexOf('.');
+      if (dot === -1) return slugify(name);
+      return slugify(name.substring(0, dot)) + '.' + slugify(name.substring(dot + 1));
+    }
+
+    function utf8_to_b64(str) {
+      const bytes = new TextEncoder().encode(str);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    }
+
+    function b64_to_utf8(b64) {
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    }
+
+    function getFolderPath(folderId) {
+      if (!folderId || folderId === 'root') return '';
+      let parts = [];
+      let cur = DB.folders.find(f => f.id === folderId);
+      while (cur && cur.id !== 'root') {
+        parts.unshift(slugify(cur.name));
+        if (!cur.parent) break;
+        cur = DB.folders.find(f => f.id === cur.parent);
+      }
+      return parts.join('/');
+    }
+
+    async function pushRawFileToGitHub(targetPath, b64Content, commitMsg) {
+      const cleanToken = sanitizeToken(DB.token);
+      if (!cleanToken) return false;
+      const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${targetPath}`;
+      let existingSha = null;
+      try {
+        const checkRes = await fetch(apiUrl, { headers: { 'Authorization': 'Bearer ' + cleanToken, 'Accept': 'application/vnd.github.v3+json' } });
+        if (checkRes.ok) existingSha = (await checkRes.json()).sha;
+      } catch(e) {}
+
+      const payload = { message: commitMsg || ('Upload ' + targetPath), content: b64Content, branch: 'main' };
+      if (existingSha) payload.sha = existingSha;
+
+      const res = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + cleanToken, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return res.ok;
+    }
+
+    async function syncMetaToGitHub() {
+      const cleanToken = sanitizeToken(DB.token);
+      if (!cleanToken) return false;
+      try {
+        const metaObj = {
+          version: 2,
+          updatedAt: Date.now(),
+          folders: DB.folders,
+          prompts: DB.prompts,
+          files: DB.files.map(f => ({ id: f.id, name: f.name, folder: f.folder, cat: f.cat, size: f.size, url: f.url, isCloud: f.isCloud }))
+        };
+        const b64 = utf8_to_b64(JSON.stringify(metaObj, null, 2));
+        return await pushRawFileToGitHub('gitcloud_meta.json', b64, 'Cập nhật thư mục & đồng bộ');
+      } catch(e) { return false; }
+    }
+
+    function ensureFolderPathFromSlugs(pathParts) {
+      let curParent = 'root';
+      for (let i = 0; i < pathParts.length; i++) {
+        const slug = pathParts[i];
+        let found = DB.folders.find(f => f.parent === curParent && (slugify(f.name) === slug || f.name === slug));
+        if (!found) {
+          const newId = 'f-auto-' + pathParts.slice(0, i+1).join('_');
+          found = { id: newId, name: slug.replace(/_/g, ' '), parent: curParent };
+          DB.folders.push(found);
+          idb.put(found, 'folders');
+        }
+        curParent = found.id;
+      }
+      return curParent;
+    }
+
+    async function syncCloud() {
+      const icon = document.getElementById('syncIcon');
+      if (icon) icon.classList.add('animate-spin');
+
+      try {
+        const localFiles = await idb.getAll('files');
+        const localFolders = await idb.getAll('folders');
+        if (localFolders.length > 0) {
+          localFolders.forEach(lf => { if (!DB.folders.some(f => f.id === lf.id)) DB.folders.push(lf); });
+        }
+        if (localFiles.length > 0) {
+          localFiles.forEach(lf => { if (!DB.files.some(f => f.id === lf.id)) DB.files.push(lf); });
+        }
+
+        const cleanToken = sanitizeToken(DB.token);
+        const headers = { 'Accept': 'application/vnd.github.v3+json' };
+        if (cleanToken) headers['Authorization'] = 'Bearer ' + cleanToken;
+
+        // BƯỚC 1: Đọc manifest gitcloud_meta.json từ GitHub
+        try {
+          let metaRes = await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/main/gitcloud_meta.json?t=${Date.now()}`, { cache: 'no-store' });
+          if (!metaRes.ok && cleanToken) metaRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/gitcloud_meta.json`, { headers });
+
+          if (metaRes.ok) {
+            let metaData;
+            const text = await metaRes.text();
+            try { metaData = JSON.parse(text); } catch(e) {
+              const apiObj = JSON.parse(text);
+              if (apiObj.content) metaData = JSON.parse(b64_to_utf8(apiObj.content));
+            }
+
+            if (metaData && Array.isArray(metaData.folders)) {
+              metaData.folders.forEach(rf => {
+                const ex = DB.folders.find(f => f.id === rf.id || (f.name === rf.name && f.parent === rf.parent));
+                if (!ex) { DB.folders.push(rf); idb.put(rf, 'folders'); }
+                else { ex.name = rf.name; ex.parent = rf.parent; idb.put(ex, 'folders'); }
+              });
+            }
+            if (metaData && Array.isArray(metaData.prompts)) {
+              metaData.prompts.forEach(rp => { if (!DB.prompts.some(p => p.id === rp.id)) DB.prompts.push(rp); });
+              localStorage.setItem('gc_prompts', JSON.stringify(DB.prompts));
+            }
+            if (metaData && Array.isArray(metaData.files)) {
+              metaData.files.forEach(rf => {
+                const ex = DB.files.find(f => f.id === rf.id || (f.name === rf.name && f.folder === rf.folder));
+                if (!ex) { DB.files.push(rf); idb.put(rf, 'files'); }
+                else { ex.isCloud = true; if (rf.url) ex.url = rf.url; ex.folder = rf.folder; idb.put(ex, 'files'); }
+              });
+            }
+          }
+        } catch(e) {}
+
+        // BƯỚC 2: Quét đệ quy toàn bộ cây GitHub
+        try {
+          let treeRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/trees/main?recursive=1`, { headers });
+          if (!treeRes.ok) treeRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/trees/master?recursive=1`, { headers });
+
+          if (treeRes.ok) {
+            const treeData = await treeRes.json();
+            if (treeData && Array.isArray(treeData.tree)) {
+              treeData.tree.forEach(item => {
+                if (item.type !== 'blob') return;
+                const pathParts = item.path.split('/');
+                const filename = pathParts.pop();
+                if (['.gitkeep','index.html','README.md','gitcloud_meta.json'].includes(filename)) {
+                  if (pathParts.length > 0) ensureFolderPathFromSlugs(pathParts);
+                  return;
+                }
+
+                const targetFolderId = pathParts.length > 0 ? ensureFolderPathFromSlugs(pathParts) : 'root';
+                const rawUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${encodeURI(item.path)}`;
+                const ex = DB.files.find(f => f.name === filename && f.folder === targetFolderId);
+                if (!ex) {
+                  const newF = { id: 'gh-' + item.sha, folder: targetFolderId, name: filename, cat: getCat(filename), size: item.size || 0, url: rawUrl, isCloud: true };
+                  DB.files.unshift(newF);
+                  idb.put(newF, 'files');
+                } else {
+                  ex.isCloud = true; ex.url = rawUrl; ex.folder = targetFolderId; idb.put(ex, 'files');
+                }
+              });
+            }
+          }
+        } catch(e) {}
+
+        localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
+        render();
+        notify(`Đã đồng bộ ${DB.folders.length - 1} thư mục và ${DB.files.length} tệp!`);
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
+      }
+    }
+
+    async function pushFileToGitHub(fileItem, fileUrl) {
+      const cleanToken = sanitizeToken(DB.token);
+      if (!cleanToken) return false;
+      setLoading(true, `Đang gửi "${fileItem.name}" lên GitHub...`);
+      try {
+        const b64 = await getBase64Data(fileUrl);
+        const cleanName = slugifyFileName(fileItem.name);
+        const folderPath = getFolderPath(fileItem.folder);
+        const targetPath = folderPath ? `${folderPath}/${cleanName}` : cleanName;
+        const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${targetPath}`;
+
+        let existingSha = null;
+        try {
+          const checkRes = await fetch(apiUrl, { headers: { 'Authorization': 'Bearer ' + cleanToken, 'Accept': 'application/vnd.github.v3+json' } });
+          if (checkRes.ok) existingSha = (await checkRes.json()).sha;
+        } catch(e) {}
+
+        const payload = { message: 'Upload ' + cleanName, content: b64, branch: 'main' };
+        if (existingSha) payload.sha = existingSha;
+
+        const res = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: { 'Authorization': 'Bearer ' + cleanToken, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        setLoading(false);
+        if (res.ok) {
+          const resData = await res.json();
+          fileItem.isCloud = true;
+          fileItem.url = resData.content?.download_url || `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${targetPath}`;
+          await idb.put(fileItem, 'files');
+          render();
+          notify('ĐÃ LÊN ĐÁM MÂY THÀNH CÔNG!');
+          await syncMetaToGitHub();
+          return true;
+        } else {
+          notify('Đã lưu trong máy (GitHub từ chối Token).', false);
+          return false;
+        }
+      } catch(e) {
+        setLoading(false);
+        notify('Đã lưu an toàn trong máy.');
+        return false;
+      }
+    }
+
+    async function uploadDirectlyInApp(file) {
+      setLoading(true, `Đang nạp "${file.name}"...`);
+      try {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const dataUrl = reader.result;
+          const newFileItem = {
+            id: 'file-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+            folder: DB.curFolder,
+            name: file.name,
+            cat: getCat(file.name),
+            size: file.size,
+            url: dataUrl,
+            isCloud: false
+          };
+          await idb.put(newFileItem, 'files');
+          DB.files.unshift(newFileItem);
+          render();
+          setLoading(false);
+          if (DB.token) await pushFileToGitHub(newFileItem, dataUrl);
+          else notify(`Đã lưu "${file.name}" trong máy.`);
+        };
+        reader.readAsDataURL(file);
+      } catch(err) {
+        setLoading(false);
+        notify('Không thể đọc tệp này.', true);
+      }
+    }
+
+    async function saveWordDocument() {
+      const rawTitle = document.getElementById('wordDocTitle').value.trim();
+      let title = rawTitle || 'Van_ban_moi.docx';
+      if (!title.toLowerCase().endsWith('.docx') && !title.toLowerCase().endsWith('.doc')) title += '.docx';
+      const content = document.getElementById('wordContentArea').innerHTML.trim();
+      if (!content) { notify('Vui lòng gõ nội dung văn bản trước khi lưu!', true); return; }
+
+      const wordHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial,sans-serif;line-height:1.6;padding:20px;}</style></head><body>${content}</body></html>`;
+      const blob = new Blob([wordHtml], { type: 'application/msword;charset=utf-8' });
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = reader.result;
+        const newWordItem = {
+          id: 'word-' + Date.now(),
+          folder: DB.curFolder,
+          name: title,
+          cat: 'word',
+          size: blob.size,
+          url: dataUrl,
+          isCloud: false
+        };
+        await idb.put(newWordItem, 'files');
+        DB.files.unshift(newWordItem);
+        render();
+        notify(`Đã lưu văn bản "${title}" vào thư mục này!`);
+        if (DB.token) pushFileToGitHub(newWordItem, dataUrl);
+      };
+      reader.readAsDataURL(blob);
+    }
+
+    function renderPromptLibrary() {
+      const cont = document.getElementById('promptLibraryContainer');
+      if (!cont) return;
+      cont.innerHTML = DB.prompts.map(p => `
+        <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-xs shadow-2xs space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-800">${p.title}</span>
+            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded ${p.cat === 'image' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}">${p.cat === 'image' ? 'Tách Ảnh' : 'Tạo Video'}</span>
+          </div>
+          <p class="text-[11px] font-mono text-slate-600 line-clamp-2 bg-slate-50 p-1.5 rounded">${p.content}</p>
+          <div class="flex items-center justify-between pt-1">
+            <button class="text-slate-400 hover:text-rose-600 p-1" data-delprompt="${p.id}" title="Xoá"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            <div class="flex items-center space-x-1.5">
+              <button class="px-2 py-1 rounded bg-purple-50 text-purple-700 hover:bg-purple-100 font-semibold text-[10px] flex items-center space-x-1" data-shareto="1" data-pid="${p.id}">
+                <span>➡️ Share Chỗ 1</span>
+              </button>
+              <button class="px-2 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-semibold text-[10px] flex items-center space-x-1" data-shareto="2" data-pid="${p.id}">
+                <span>➡️ Share Chỗ 2</span>
+              </button>
+            </div>
           </div>
         </div>
-        <button id="btnCloseWordEditor" class="text-slate-400 hover:text-slate-600 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
-      </div>
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <input type="text" id="wordDocTitle" placeholder="Tên tệp (vd: Ke_hoach.docx)" class="flex-1 px-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-500 font-semibold text-slate-800">
-        <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg">
-          <button class="word-btn px-2 py-1 text-xs font-bold rounded hover:bg-white text-slate-700" data-cmd="bold">B</button>
-          <button class="word-btn px-2 py-1 text-xs italic font-serif rounded hover:bg-white text-slate-700" data-cmd="italic">I</button>
-          <button class="word-btn px-2 py-1 text-xs font-bold rounded hover:bg-white text-slate-700" data-cmd="formatBlock" data-val="h2">H2</button>
-          <button class="word-btn px-2 py-1 text-xs rounded hover:bg-white text-slate-700" data-cmd="insertUnorderedList"><i data-lucide="list" class="w-3.5 h-3.5"></i></button>
-        </div>
-      </div>
-      <div id="wordContentArea" contenteditable="true" data-placeholder="Chạm vào đây để bắt đầu đánh máy nội dung văn bản Word của bạn..." class="word-paper w-full p-4 text-sm text-slate-800 bg-white border border-slate-200 rounded-xl"></div>
-      <div class="flex items-center justify-between pt-2">
-        <span class="text-[11px] text-slate-400">Định dạng chuẩn Microsoft Word (.docx)</span>
-        <button id="btnSaveWordDoc" class="flex items-center space-x-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs">
-          <i data-lucide="save" class="w-3.5 h-3.5"></i>
-          <span>Lưu vào thư mục này</span>
-        </button>
-      </div>
-    </div>
+      `).join('');
+    }
 
-    <!-- AI Studio (3 Chỗ) -->
-    <div id="aiStudioSection" class="hidden bg-white rounded-2xl border-2 border-purple-400 p-4 shadow-lg space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div class="flex items-center space-x-2">
-          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-xs">
-            <i data-lucide="sparkles" class="w-4 h-4"></i>
+    function render() {
+      document.getElementById('tokenDot').className = DB.token ? 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse' : 'w-2 h-2 rounded-full bg-amber-500';
+      const curF = DB.folders.find(x => x.id === DB.curFolder) || DB.folders[0];
+      let crumbs = [];
+      let c = curF;
+      while (c) {
+        crumbs.unshift(c);
+        if (!c.parent) break;
+        c = DB.folders.find(x => x.id === c.parent);
+      }
+      document.getElementById('breadcrumb').innerHTML = crumbs.map((x, i) => {
+        if (i === crumbs.length - 1) return `<span class="font-bold text-slate-800 flex items-center"><i data-lucide="folder-open" class="w-3.5 h-3.5 mr-1 text-indigo-600"></i>${x.name}</span>`;
+        return `<button class="hover:text-indigo-600 font-medium" data-nav="${x.id}">${x.name}</button><span class="text-slate-300">/</span>`;
+      }).join('');
+
+      document.getElementById('wordFolderTargetText').textContent = 'Lưu vào thư mục: ' + curF.name;
+
+      const subs = DB.folders.filter(x => x.parent === DB.curFolder);
+      const fCont = document.getElementById('folderContainer');
+      fCont.innerHTML = subs.map(x => `
+        <div class="bg-white p-2.5 rounded-xl border border-slate-200 flex items-center justify-between group cursor-pointer hover:border-indigo-400 shadow-2xs transition" data-fcard="${x.id}">
+          <div class="flex items-center space-x-2 truncate">
+            <i data-lucide="folder" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+            <span class="font-semibold text-xs text-slate-800 truncate">${x.name}</span>
           </div>
-          <div>
-            <h3 class="font-bold text-sm text-slate-900">AI Studio Thông Minh</h3>
-            <p class="text-[11px] text-purple-700 font-medium">ChatGPT Tách Ảnh • AI Flow Tạo Video • Kho Prompt Mẫu Chia Sẻ</p>
-          </div>
-        </div>
-        <button id="btnCloseAiStudio" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
-      </div>
-
-      <div class="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
-        <button id="btnAiTab1" class="py-2 rounded-lg bg-white text-indigo-700 shadow-2xs flex items-center justify-center space-x-1">
-          <i data-lucide="scissors" class="w-3.5 h-3.5"></i><span class="truncate">1. ChatGPT Tách Ảnh</span>
-        </button>
-        <button id="btnAiTab2" class="py-2 rounded-lg text-slate-600 hover:text-slate-900 flex items-center justify-center space-x-1">
-          <i data-lucide="workflow" class="w-3.5 h-3.5"></i><span class="truncate">2. AI Flow Tạo Video</span>
-        </button>
-        <button id="btnAiTab3" class="py-2 rounded-lg text-slate-600 hover:text-slate-900 flex items-center justify-center space-x-1">
-          <i data-lucide="bookmark" class="w-3.5 h-3.5"></i><span class="truncate">3. Kho Prompt Mẫu</span>
-        </button>
-      </div>
-
-      <!-- Chỗ 1 -->
-      <div id="aiSection1" class="space-y-3">
-        <div class="p-3 bg-purple-50/60 rounded-xl border border-purple-100 text-xs text-purple-900">
-          <span class="font-bold flex items-center"><i data-lucide="sparkles" class="w-3.5 h-3.5 mr-1 text-purple-600"></i>Cầu nối Tách Ảnh Chuyên Nghiệp cùng ChatGPT</span>
-          <p class="text-[11px] text-purple-700 mt-1">Dựng câu lệnh chuyên sâu cho ChatGPT Vision để tách tóc và phông nền trong suốt chuẩn PNG.</p>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Prompt tách ảnh gửi ChatGPT:</label>
-          <textarea id="chatgptPromptInput" rows="3" class="w-full text-xs p-3 border border-slate-200 rounded-xl outline-none focus:border-purple-500 font-mono text-slate-700">Isolate and extract the main subject from this image with pixel-perfect edge detection. Remove the background completely and make it 100% transparent PNG. Preserve fine details like hair and delicate contours with zero color fringing.</textarea>
-          <span id="promptReceivedBadge1" class="text-[10px] text-emerald-600 font-semibold block mt-1"></span>
-        </div>
-        <div class="flex items-center justify-between pt-1">
-          <button id="btnCopyPrompt1" class="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-1">
-            <i data-lucide="copy" class="w-3.5 h-3.5"></i><span>Sao chép Prompt</span>
-          </button>
-          <button id="btnOpenChatGPTWeb" class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-xs font-bold shadow-xs hover:opacity-95 flex items-center space-x-1.5">
-            <i data-lucide="external-link" class="w-3.5 h-3.5"></i><span>Mở ChatGPT & Dán Ảnh</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Chỗ 2 -->
-      <div id="aiSection2" class="hidden space-y-3">
-        <div class="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 text-xs text-indigo-900">
-          <span class="font-bold flex items-center"><i data-lucide="video" class="w-3.5 h-3.5 mr-1 text-indigo-600"></i>Quy Trình Tạo Video Chuẩn Điện Ảnh (AI Flow)</span>
-          <p class="text-[11px] text-indigo-700 mt-1">Tạo chuyển động camera, ánh sáng tương thích Kling, Luma Dream Machine, Runway, Pika.</p>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Nền tảng video:</label>
-            <select id="aiFlowModelSelect" class="w-full text-xs p-2 border border-slate-200 rounded-lg outline-none font-semibold text-slate-700">
-              <option value="kling">Kling AI (Chuyển động chân thực)</option>
-              <option value="luma">Luma Dream Machine (Điện ảnh mượt mà)</option>
-              <option value="runway">Runway Gen-3 Alpha (Chuyên nghiệp)</option>
-              <option value="pika">Pika Labs (Hiệu ứng & Hoạt hình)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Góc quay Camera:</label>
-            <select id="aiFlowCameraSelect" class="w-full text-xs p-2 border border-slate-200 rounded-lg outline-none font-semibold text-slate-700">
-              <option value="slow-zoom">Slow Zoom In (Thu phóng chậm)</option>
-              <option value="orbit">Orbit 360 (Xoay tròn nhân vật)</option>
-              <option value="pan-right">Pan Right / Dolly (Trượt sang phải)</option>
-              <option value="cinematic">Cinematic Drone FPV (Flycam điện ảnh)</option>
-            </select>
+          <div class="flex items-center space-x-1">
+            <button class="p-1 text-slate-400 hover:text-amber-600 rounded" data-fren="${x.id}" title="Đổi tên"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+            <button class="p-1 text-slate-400 hover:text-rose-600 rounded" data-fdel="${x.id}" title="Xoá"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           </div>
         </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Kịch bản video AI Flow:</label>
-          <textarea id="aiFlowPromptInput" rows="3" class="w-full text-xs p-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 font-mono text-slate-700">A cinematic realistic scene, high resolution, 4k, hyper-detailed, dramatic studio lighting, smooth continuous camera movement, 60fps photorealistic rendering.</textarea>
-          <span id="promptReceivedBadge2" class="text-[10px] text-emerald-600 font-semibold block mt-1"></span>
-        </div>
-        <div class="flex items-center justify-between pt-1">
-          <button id="btnCopyPrompt2" class="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-1">
-            <i data-lucide="copy" class="w-3.5 h-3.5"></i><span>Sao chép Prompt</span>
-          </button>
-          <button id="btnLaunchAiFlow" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-xs font-bold shadow-xs hover:opacity-95 flex items-center space-x-1.5">
-            <i data-lucide="play" class="w-3.5 h-3.5"></i><span>Khởi Chạy Tạo Video</span>
-          </button>
-        </div>
-      </div>
+      `).join('');
 
-      <!-- Chỗ 3 -->
-      <div id="aiSection3" class="hidden space-y-3">
-        <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-xs text-amber-900">
-          <span class="font-bold flex items-center"><i data-lucide="share-2" class="w-3.5 h-3.5 mr-1 text-amber-600"></i>Kho Prompt Mẫu Chia Sẻ 1 Chạm</span>
-          <p class="text-[11px] text-amber-700 mt-1">Bấm <strong>[➡️ Share Chỗ 1]</strong> hoặc <strong>[➡️ Share Chỗ 2]</strong> để nạp prompt tự động!</p>
-        </div>
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input type="text" id="newPromptTitle" placeholder="Tiêu đề mẫu (vd: Tách tóc người đẹp)" class="text-xs p-2 border border-slate-200 rounded-lg outline-none">
-            <select id="newPromptCat" class="text-xs p-2 border border-slate-200 rounded-lg outline-none font-semibold text-slate-700">
-              <option value="image">Mẫu Tách Ảnh (Dành cho Chỗ 1)</option>
-              <option value="video">Mẫu Tạo Video (Dành cho Chỗ 2)</option>
-            </select>
-          </div>
-          <textarea id="newPromptContent" rows="2" placeholder="Dán nội dung prompt vào đây..." class="w-full text-xs p-2 border border-slate-200 rounded-lg outline-none font-mono"></textarea>
-          <button id="btnAddPromptTemplate" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i><span>Lưu Vào Kho Mẫu</span>
-          </button>
-        </div>
-        <div id="promptLibraryContainer" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
-      </div>
-    </div>
+      const list = DB.files.filter(f => (f.folder === DB.curFolder || (!f.folder && DB.curFolder === 'root')) && (DB.curCat === 'all' || f.cat === DB.curCat));
+      const grid = document.getElementById('fileGrid');
+      const emp = document.getElementById('emptyView');
 
-    <!-- File Grid & Empty View -->
-    <div id="fileGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
-    <div id="emptyView" class="hidden text-center py-12 bg-white rounded-2xl border border-slate-200">
-      <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
-        <i data-lucide="folder" class="w-6 h-6"></i>
-      </div>
-      <h3 class="font-bold text-sm text-slate-700 mb-1">Chưa có tệp nào ở đây</h3>
-      <p class="text-xs text-slate-400">Chạm vào khung tải lên phía trên hoặc tạo văn bản Word mới</p>
-    </div>
-  </main>
+      if (list.length === 0 && subs.length === 0) { emp.classList.remove('hidden'); grid.innerHTML = ''; }
+      else {
+        emp.classList.add('hidden');
+        grid.innerHTML = list.map(f => {
+          let preview = '';
+          if (f.cat === 'image') preview = `<div class="h-32 bg-slate-100 rounded-lg overflow-hidden mb-2"><img src="${f.url}" class="w-full h-full object-cover"></div>`;
+          else if (f.cat === 'video') preview = `<div class="h-32 bg-slate-900 rounded-lg flex items-center justify-center text-white mb-2"><i data-lucide="play-circle" class="w-8 h-8"></i></div>`;
+          else if (f.cat === 'word') preview = `<div class="h-28 bg-blue-50 border border-blue-100 rounded-lg flex flex-col items-center justify-center text-blue-700 mb-2"><i data-lucide="file-text" class="w-8 h-8 mb-1"></i><span class="text-[10px] font-bold">Văn bản Word</span></div>`;
 
-  <!-- Modals -->
-  <div id="tokenModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4">
-      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-        <h3 class="font-bold text-sm text-slate-900 flex items-center"><i data-lucide="key" class="w-4 h-4 mr-1.5 text-indigo-6
+          let cloudBadge = f.isCloud 
+            ? '<span class="text-emerald-600 font-semibold flex items-center"><i data-lucide="check" class="w-3 h-3 mr-0.5"></i>Đám mây</span>' 
+            : '<span class="text-amber-600 font-semibold">Trong máy</span>';
+
+          return `
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+              <div>
+                ${preview}
+                <div class="font-semibold text-xs text-slate-900 truncate mb-1" title="${f.name}">${f.name}</div>
+                <div class="text-[10px] text-slate-400 mb-2 flex items-center justify-between">
+                  <span>${(f.size/1024).toFixed(1)} KB</span>
+                  ${cloudBadge}
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 uppercase">${f.cat}</span>
+                <div class="flex items-center space-x-1">
+                  <button class="p-1 text-slate-400 hover:text-amber-600" data-ren="${f.id}" title="Đổi tên"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                  <a href="${f.url}" target="_blank" download="${f.name}" class="p-1 text-slate-400 hover:text-indigo-600" title="Tải về"><i data-lucide="download" class="w-3.5 h-3.5"></i></a>
+                  <button class="p-1 text-slate-400 hover:text-rose-600" data-del="${f.id}" title="Xoá"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      renderPromptLibrary();
+      lucide.createIcons();
+    }
+
+    document.getElementById('btnSync').addEventListener('click', syncCloud);
+
+    // Token
+    document.getElementById('btnToken').addEventListener('click', () => {
+      document.getElementById('tokenInput').value = DB.token;
+      document.getElementById('tokenVerifyStatus').className = 'hidden';
+      document.getElementById('tokenModal').classList.remove('hidden');
+    });
+    document.getElementById('btnCloseToken').addEventListener('click', () => document.getElementById('tokenModal').classList.add('hidden'));
+    document.getElementById('btnCancelToken').addEventListener('click', () => document.getElementById('tokenModal').classList.add('hidden'));
+    document.getElementById('btnClearToken').addEventListener('click', () => { document.getElementById('tokenInput').value = ''; document.getElementById('tokenInput').focus(); });
+    document.getElementById('btnTestToken').addEventListener('click', async () => {
+      const val = sanitizeToken(document.getElementById('tokenInput').value);
+      const st = document.getElementById('tokenVerifyStatus');
+      st.className = 'text-xs p-2.5 rounded-xl bg-blue-50 text-blue-700 flex items-center space-x-1';
+      st.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Đang kiểm tra kết nối GitHub...</span>';
+      st.classList.remove('hidden');
+      lucide.createIcons();
+
+      try {
+        const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}`, { headers: { 'Authorization': 'Bearer ' + val, 'Accept': 'application/vnd.github.v3+json' } });
+        if (res.ok) {
+          st.className = 'text-xs p-2.5 rounded-xl bg-emerald-50 text-emerald-800 font-semibold';
+          st.textContent = 'Token chính xác! Đã kết nối kho lưu trữ thành công.';
+        } else {
+          st.className = 'text-xs p-2.5 rounded-xl bg-rose-50 text-rose-800 font-semibold';
+          st.textContent = 'Mã Token không hợp lệ hoặc thiếu quyền repo.';
+        }
+      } catch(e) {
+        st.className = 'text-xs p-2.5 rounded-xl bg-rose-50 text-rose-800 font-semibold';
+        st.textContent = 'Lỗi kết nối mạng khi kiểm tra Token.';
+      }
+    });
+    document.getElementById('btnSaveToken').addEventListener('click', () => {
+      const val = sanitizeToken(document.getElementById('tokenInput').value);
+      DB.token = val;
+      localStorage.setItem('gc_token', val);
+      document.getElementById('tokenModal').classList.add('hidden');
+      notify('Đã lưu Token thành công!');
+      render();
+      syncCloud();
+    });
+
+    // Thư mục
+    function openFolderModal() { document.getElementById('folderNameInput').value = ''; document.getElementById('folderModal').classList.remove('hidden'); }
+    document.getElementById('btnNewFolderHeader').addEventListener('click', openFolderModal);
+    document.getElementById('btnNewFolderInline').addEventListener('click', openFolderModal);
+    document.getElementById('btnCloseFolder').addEventListener('click', () => document.getElementById('folderModal').classList.add('hidden'));
+    document.getElementById('btnCancelFolder').addEventListener('click', () => document.getElementById('folderModal').classList.add('hidden'));
+    document.getElementById('btnSaveFolder').addEventListener('click', async () => {
+      const n = document.getElementById('folderNameInput').value.trim();
+      if (!n) return;
+      const newFolderId = 'f-' + Date.now();
+      const newFolderObj = { id: newFolderId, name: n, parent: DB.curFolder };
+      DB.folders.push(newFolderObj);
+      await idb.put(newFolderObj, 'folders');
+      localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
+      document.getElementById('folderModal').classList.add('hidden');
+      render();
+      notify('Đã tạo thư mục: ' + n);
+
+      if (DB.token) {
+        const folderPath = getFolderPath(newFolderId);
+        if (folderPath) await pushRawFileToGitHub(`${folderPath}/.gitkeep`, '', 'Tạo thư mục ' + n);
+        await syncMetaToGitHub();
+      }
+    });
+
+    document.getElementById('folderContainer').addEventListener('click', (e) => {
+      const delBtn = e.target.closest('[data-fdel]');
+      if (delBtn) {
+        e.stopPropagation();
+        const fId = delBtn.dataset.fdel;
+        const targetF = DB.folders.find(x => x.id === fId);
+        if (targetF) {
+          DB.pendingDeleteFolderId = fId;
+          document.getElementById('deleteFolderConfirmText').textContent = `Bạn có chắc muốn xoá thư mục "${targetF.name}" và toàn bộ tệp bên trong?`;
+          document.getElementById('deleteFolderConfirmModal').classList.remove('hidden');
+        }
+        return;
+      }
+      const renBtn = e.target.closest('[data-fren]');
+      if (renBtn) {
+        e.stopPropagation();
+        DB.target = { type: 'folder', id: renBtn.dataset.fren };
+        const f = DB.folders.find(x => x.id === renBtn.dataset.fren);
+        document.getElementById('renameInput').value = f ? f.name : '';
+        document.getElementById('renameModal').classList.remove('hidden');
+        return;
+      }
+      const card = e.target.closest('[data-fcard]');
+      if (card) { DB.curFolder = card.dataset.fcard; render(); }
+    });
+
+    document.getElementById('btnCancelDeleteFolder').addEventListener('click', () => {
+      document.getElementById('deleteFolderConfirmModal').classList.add('hidden');
+      DB.pendingDeleteFolderId = null;
+    });
+    document.getElementById('btnConfirmDeleteFolder').addEventListener('click', async () => {
+      const idToDelete = DB.pendingDeleteFolderId;
+      if (idToDelete) {
+        function getSubfolderIds(parentId) {
+          let ids = [parentId];
+          const children = DB.folders.filter(f => f.parent === parentId);
+          children.forEach(c => { ids = ids.concat(getSubfolderIds(c.id)); });
+          return ids;
+        }
+        const allIdsToDelete = getSubfolderIds(idToDelete);
+        DB.folders = DB.folders.filter(x => !allIdsToDelete.includes(x.id));
+        for (const fId of allIdsToDelete) await idb.delete(fId, 'folders');
+
+        const filesToDelete = DB.files.filter(f => allIdsToDelete.includes(f.folder));
+        DB.files = DB.files.filter(f => !allIdsToDelete.includes(f.folder));
+        for (const file of filesToDelete) await idb.delete(file.id, 'files');
+
+        localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
+        if (DB.curFolder && allIdsToDelete.includes(DB.curFolder)) DB.curFolder = 'root';
+        render();
+        notify('Đã xoá thư mục thành công!');
+        if (DB.token) await syncMetaToGitHub();
+      }
+      document.getElementById('deleteFolderConfirmModal').classList.add('hidden');
+      DB.pendingDeleteFolderId = null;
+    });
+
+    document.getElementById('breadcrumb').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-nav]');
+      if (btn) { DB.curFolder = btn.dataset.nav; render(); }
+    });
+
+    document.getElementById('fileGrid').addEventListener('click', async (e) => {
+      const ren = e.target.closest('[data-ren]');
+      if (ren) {
+        DB.target = { type: 'file', id: ren.dataset.ren };
+        const f = DB.files.find(x => x.id === ren.dataset.ren);
+        document.getElementById('renameInput').value = f ? f.name : '';
+        document.getElementById('renameModal').classList.remove('hidden');
+        return;
+      }
+      const del = e.target.closest('[data-del]');
+      if (del) {
+        const id = del.dataset.del;
+        DB.files = DB.files.filter(x => x.id !== id);
+        await idb.delete(id, 'files');
+        render();
+        notify('Đã xoá tệp.');
+        if (DB.token) syncMetaToGitHub();
+      }
+    });
+
+    document.getElementById('btnCloseRename').addEventListener('click', () => document.getElementById('renameModal').classList.add('hidden'));
+    document.getElementById('btnCancelRename').addEventListener('click', () => document.getElementById('renameModal').classList.add('hidden'));
+    document.getElementById('btnSaveRename').addEventListener('click', async () => {
+      const v = document.getElementById('renameInput').value.trim();
+      if (v && DB.target) {
+        if (DB.target.type === 'file') {
+          const f = DB.files.find(x => x.id === DB.target.id);
+          if (f) { f.name = v; f.cat = getCat(v); await idb.put(f, 'files'); }
+        } else {
+          const f = DB.folders.find(x => x.id === DB.target.id);
+          if (f) { f.name = v; await idb.put(f, 'folders'); localStorage.setItem('gc_folders', JSON.stringify(DB.folders)); }
+        }
+        render();
+        notify('Đã đổi tên thành công!');
+        if (DB.token) await syncMetaToGitHub();
+      }
+      document.getElementById('renameModal').classList.add('hidden');
+    });
+
+    const fInput = document.getElementById('fileInput');
+    document.getElementById('dropZone').addEventListener('click', () => fInput.click());
+    fInput.addEventListener('change', (e) => {
+      Array.from(e.target.files).forEach(uploadDirectlyInApp);
+      fInput.value = '';
+    });
+
+    document.getElementById('tabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab-btn');
+      if (!btn) return;
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.className = 'tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50';
+      });
+      btn.className = 'tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white shadow-xs';
+      DB.curCat = btn.dataset.cat;
+
+      const wordEditor = document.getElementById('wordEditorSection');
+      if (DB.curCat === 'word') {
+        wordEditor.classList.remove('hidden');
+        document.getElementById('wordContentArea').focus();
+      } else {
+        wordEditor.classList.add('hidden');
+      }
+      render();
+    });
+
+    document.getElementById('btnSaveWordDoc').addEventListener('click', saveWordDocument);
+    document.getElementById('btnCloseWordEditor').addEventListener('click', () => {
+      document.getElementById('wordEditorSection').classList.add('hidden');
+    });
+    document.querySelectorAll('.word-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.execCommand(b.dataset.cmd, false, b.dataset.val || null);
+        document.getElementById('wordContentArea').focus();
+      });
+    });
+
+    document.getElementById('btnAiStudio').addEventListener('click', () => {
+      document.getElementById('aiStudioSection').classList.remove('hidden');
+      switchAiTab(1);
+    });
+    document.getElementById('btnCloseAiStudio').addEventListener('click', () => {
+      document.getElementById('aiStudioSection').classList.add('hidden');
+    });
+
+    function switchAiTab(t) {
+      const b1 = document.getElementById('btnAiTab1'), b2 = document.getElementById('btnAiTab2'), b3 = document.getElementById('btnAiTab3');
+      const s1 = document.getElementById('aiSection1'), s2 = document.getElementById('aiSection2'), s3 = document.getElementById('aiSection3');
+      [b1, b2, b3].forEach(b => b.className = 'py-2 rounded-lg text-slate-600 hover:text-slate-900 flex items-center justify-center space-x-1');
+      [s1, s2, s3].forEach(s => s.classList.add('hidden'));
+
+      if (t === 1) { b1.className = 'py-2 rounded-lg bg-white text-indigo-700 shadow-2xs flex items-center justify-center space-x-1'; s1.classList.remove('hidden'); }
+      else if (t === 2) { b2.className = 'py-2 rounded-lg bg-white text-indigo-700 shadow-2xs flex items-center justify-center space-x-1'; s2.classList.remove('hidden'); }
+      else { b3.className = 'py-2 rounded-lg bg-white text-indigo-700 shadow-2xs flex items-center justify-center space-x-1'; s3.classList.remove('hidden'); }
+      lucide.createIcons();
+    }
+
+    document.getElementById('btnAiTab1').addEventListener('click', () => switchAiTab(1));
+    document.getElementById('btnAiTab2').addEventListener('click', () => switchAiTab(2));
+    document.getElementById('btnAiTab3').addEventListener('click', () => switchAiTab(3));
+
+    document.getElementById('btnOpenChatGPTWeb').addEventListener('click', () => {
+      const prompt = document.getElementById('chatgptPromptInput').value;
+      navigator.clipboard.writeText(prompt);
+      notify('Đã copy Prompt! Đang mở ChatGPT...');
+      window.open('https://chatgpt.com/', '_blank');
+    });
+    document.getElementById('btnCopyPrompt1').addEventListener('click', () => {
+      navigator.clipboard.writeText(document.getElementById('chatgptPromptInput').value);
+      notify('Đã copy Prompt Tách Ảnh!');
+    });
+
+    document.getElementById('btnLaunchAiFlow').addEventListener('click', () => {
+      const model = document.getElementById('aiFlowModelSelect').value;
+      const cam = document.getElementById('aiFlowCameraSelect').value;
+      const prompt = document.getElementById('aiFlowPromptInput').value;
+      const full = `[Model: ${model}] [Camera: ${cam}] ${prompt}`;
+      navigator.clipboard.writeText(full);
+      notify('Đã copy kịch bản AI Flow! Đang mở studio...');
+      if (model === 'kling') window.open('https://klingai.com/', '_blank');
+      else if (model === 'luma') window.open('https://lumalabs.ai/dream-machine', '_blank');
+      else if (model === 'runway') window.open('https://runwayml.com/', '_blank');
+      else window.open('https://pika.art/', '_blank');
+    });
+    document.getElementById('btnCopyPrompt2').addEventListener('click', () => {
+      navigator.clipboard.writeText(document.getElementById('aiFlowPromptInput').value);
+      notify('Đã copy kịch bản AI Flow!');
+    });
+
+    document.getElementById('btnAddPromptTemplate').addEventListener('click', () => {
+      const title = document.getElementById('newPromptTitle').value.trim();
+      const cat = document.getElementById('newPromptCat').value;
+      const content = document.getElementById('newPromptContent').value.trim();
+      if (!title || !content) { notify('Vui lòng nhập tiêu đề và nội dung prompt!', true); return; }
+
+      const newP = { id: 'p-' + Date.now(), title, cat, content };
+      DB.prompts.unshift(newP);
+      localStorage.setItem('gc_prompts', JSON.stringify(DB.prompts));
+      document.getElementById('newPromptTitle').value = '';
+      document.getElementById('newPromptContent').value = '';
+      renderPromptLibrary();
+      notify('Đã lưu mẫu prompt mới vào kho!');
+      if (DB.token) syncMetaToGitHub();
+    });
+
+    document.getElementById('promptLibraryContainer').addEventListener('click', (e) => {
+      const shareBtn = e.target.closest('[data-shareto]');
+      if (shareBtn) {
+        const dest = shareBtn.dataset.shareto;
+        const targetPrompt = DB.prompts.find(x => x.id === shareBtn.dataset.pid);
+        if (!targetPrompt) return;
+        if (dest === '1') {
+          document.getElementById('chatgptPromptInput').value = targetPrompt.content;
+          document.getElementById('promptReceivedBadge1').textContent = `✓ Đã nạp từ mẫu: "${targetPrompt.title}"`;
+          switchAiTab(1);
+          notify('Đã chuyển prompt sang Chỗ 1 (ChatGPT Tách Ảnh)!');
+        } else {
+          document.getElementById('aiFlowPromptInput').value = targetPrompt.content;
+          document.getElementById('promptReceivedBadge2').textContent = `✓ Đã nạp từ mẫu: "${targetPrompt.title}"`;
+          switchAiTab(2);
+          notify('Đã chuyển prompt sang Chỗ 2 (AI Flow Tạo Video)!');
+        }
+        return;
+      }
+      const delBtn = e.target.closest('[data-delprompt]');
+      if (delBtn) {
+        DB.prompts = DB.prompts.filter(x => x.id !== delBtn.dataset.delprompt);
+        localStorage.setItem('gc_prompts', JSON.stringify(DB.prompts));
+        renderPromptLibrary();
+        notify('Đã xoá mẫu prompt.');
+        if (DB.token) syncMetaToGitHub();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await idb.init();
+      render();
+      syncCloud();
+    });
+  </script>
+</body>
+</html>
