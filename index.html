@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitCloud Drive - Lưu Trữ Đám Mây</title>
+  <title>GitCloud Drive - Kho Lưu Trữ Đám Mây</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -66,7 +66,7 @@
           <i data-lucide="upload-cloud" class="w-6 h-6"></i>
         </div>
         <p class="text-sm font-bold text-slate-900">Chạm vào đây để chọn Ảnh, Video, Word, Excel, PowerPoint</p>
-        <p class="text-xs text-slate-500">Tải ảnh chụp, tài liệu trực tiếp ngay trên trang web này</p>
+        <p class="text-xs text-slate-500">Tải tệp vào thư mục đang mở & tự động đồng bộ sang mọi máy</p>
       </div>
     </div>
 
@@ -90,7 +90,7 @@
     </div>
   </main>
 
-  <!-- Modal Nhập Token -->
+  <!-- Modal Token -->
   <div id="tokenModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
       <div class="flex items-center justify-between pb-2 border-b border-slate-100">
@@ -174,11 +174,14 @@
       db: null,
       init() {
         return new Promise((resolve) => {
-          const req = indexedDB.open('GitCloudPermanentDB_v3', 1);
+          const req = indexedDB.open('GitCloudPermanentDB_v4', 1);
           req.onupgradeneeded = (e) => {
             const d = e.target.result;
             if (!d.objectStoreNames.contains('files')) {
               d.createObjectStore('files', { keyPath: 'id' });
+            }
+            if (!d.objectStoreNames.contains('folders')) {
+              d.createObjectStore('folders', { keyPath: 'id' });
             }
           };
           req.onsuccess = (e) => {
@@ -188,34 +191,34 @@
           req.onerror = () => resolve();
         });
       },
-      getAll() {
+      getAll(storeName = 'files') {
         return new Promise((resolve) => {
           if (!idb.db) return resolve([]);
           try {
-            const tx = idb.db.transaction('files', 'readonly');
-            const req = tx.objectStore('files').getAll();
+            const tx = idb.db.transaction(storeName, 'readonly');
+            const req = tx.objectStore(storeName).getAll();
             req.onsuccess = () => resolve(req.result || []);
             req.onerror = () => resolve([]);
           } catch(e) { resolve([]); }
         });
       },
-      put(item) {
+      put(item, storeName = 'files') {
         return new Promise((resolve) => {
           if (!idb.db) return resolve();
           try {
-            const tx = idb.db.transaction('files', 'readwrite');
-            tx.objectStore('files').put(item);
+            const tx = idb.db.transaction(storeName, 'readwrite');
+            tx.objectStore(storeName).put(item);
             tx.oncomplete = () => resolve();
             tx.onerror = () => resolve();
           } catch(e) { resolve(); }
         });
       },
-      delete(id) {
+      delete(id, storeName = 'files') {
         return new Promise((resolve) => {
           if (!idb.db) return resolve();
           try {
-            const tx = idb.db.transaction('files', 'readwrite');
-            tx.objectStore('files').delete(id);
+            const tx = idb.db.transaction(storeName, 'readwrite');
+            tx.objectStore(storeName).delete(id);
             tx.oncomplete = () => resolve();
             tx.onerror = () => resolve();
           } catch(e) { resolve(); }
@@ -244,7 +247,7 @@
       const txt = document.getElementById('loadingText');
       if (isLoading) {
         bar.classList.remove('hidden');
-        txt.textContent = text || 'Đang xử lý tệp...';
+        txt.textContent = text || 'Đang xử lý...';
       } else {
         bar.classList.add('hidden');
       }
@@ -277,12 +280,31 @@
       });
     }
 
+    function getFolderPath(folderId) {
+      if (!folderId || folderId === 'root') return '';
+      let parts = [];
+      let cur = DB.folders.find(f => f.id === folderId);
+      while (cur && cur.id !== 'root') {
+        parts.unshift(cur.name.replace(/[^a-zA-Z0-9._-]/g, '_'));
+        if (!cur.parent) break;
+        cur = DB.folders.find(f => f.id === cur.parent);
+      }
+      return parts.join('/');
+    }
+
     async function syncCloud() {
       const icon = document.getElementById('syncIcon');
       if (icon) icon.classList.add('animate-spin');
 
       try {
-        const localFiles = await idb.getAll();
+        const localFiles = await idb.getAll('files');
+        const localFolders = await idb.getAll('folders');
+
+        if (localFolders && localFolders.length > 0) {
+          localFolders.forEach(lf => {
+            if (!DB.folders.some(f => f.id === lf.id)) DB.folders.push(lf);
+          });
+        }
 
         let cloudItems = [];
         try {
@@ -293,45 +315,96 @@
           let res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents`, { headers });
           if (res.ok) {
             let data = await res.json();
-            cloudItems = data.filter(i => i.type === 'file' && i.name !== 'index.html' && i.name !== 'README.md');
-          }
+            
+            const cloudDirs = data.filter(i => i.type === 'dir' && !i.name.startsWith('.'));
+            cloudDirs.forEach(cd => {
+              const dirId = 'f-cloud-' + cd.name;
+              if (!DB.folders.some(f => f.name === cd.name)) {
+                const newF = { id: dirId, name: cd.name, parent: 'root' };
+                DB.folders.push(newF);
+                idb.put(newF, 'folders');
+              }
+            });
 
-          let upRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/uploads`, { headers });
-          if (upRes.ok) {
-            let upData = await upRes.json();
-            if (Array.isArray(upData)) cloudItems = cloudItems.concat(upData.filter(i => i.type === 'file'));
+            cloudItems = data.filter(i => i.type === 'file' && i.name !== 'index.html' && i.name !== 'README.md');
+
+            for (const dir of cloudDirs) {
+              try {
+                let subRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${dir.name}`, { headers });
+                if (subRes.ok) {
+                  let subData = await subRes.json();
+                  const subFiles = subData.filter(i => i.type === 'file' && i.name !== '.gitkeep');
+                  subFiles.forEach(sf => {
+                    sf.folderName = dir.name;
+                    cloudItems.push(sf);
+                  });
+                }
+              } catch(e) {}
+            }
           }
         } catch(netErr) {}
 
-        const cloudFiles = cloudItems.map(i => ({
-          id: 'gh-' + i.sha,
-          folder: 'root',
-          name: i.name,
-          cat: getCat(i.name),
-          size: i.size || 0,
-          url: i.download_url,
-          isCloud: true
-        }));
+        const cloudFiles = cloudItems.map(i => {
+          let folderId = 'root';
+          if (i.folderName) {
+            const matchedF = DB.folders.find(f => f.name === i.folderName);
+            if (matchedF) folderId = matchedF.id;
+          }
+          return {
+            id: 'gh-' + i.sha,
+            folder: folderId,
+            name: i.name,
+            cat: getCat(i.name),
+            size: i.size || 0,
+            url: i.download_url,
+            isCloud: true
+          };
+        });
 
         const merged = [...cloudFiles];
         localFiles.forEach(lf => {
-          const cloudMatch = merged.find(m => m.name === lf.name);
-          if (cloudMatch) {
+          const match = merged.find(m => m.name === lf.name);
+          if (match) {
             lf.isCloud = true;
-            lf.url = cloudMatch.url;
+            lf.url = match.url;
           } else {
             merged.push(lf);
           }
         });
 
         DB.files = merged;
+        localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
         render();
-        notify(`Đã cập nhật ${DB.files.length} tệp!`);
+        notify(`Đã đồng bộ ${DB.folders.length - 1} thư mục và ${DB.files.length} tệp từ đám mây!`);
       } catch (err) {
         console.warn(err);
       } finally {
         if (icon) icon.classList.remove('animate-spin');
       }
+    }
+
+    async function pushFolderToGitHub(folderName) {
+      const cleanToken = sanitizeToken(DB.token);
+      if (!cleanToken) return;
+
+      try {
+        const cleanDir = folderName.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${cleanDir}/.gitkeep`;
+
+        await fetch(apiUrl, {
+          method: 'PUT',
+          headers: {
+            'Authorization': 'Bearer ' + cleanToken,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: 'Create folder ' + cleanDir,
+            content: btoa(''),
+            branch: 'main'
+          })
+        });
+      } catch(e) {}
     }
 
     async function pushFileToGitHub(fileItem, fileUrl) {
@@ -346,7 +419,10 @@
       try {
         const b64 = await getBase64Data(fileUrl);
         const cleanName = fileItem.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${cleanName}`;
+        
+        const folderPath = getFolderPath(fileItem.folder);
+        const targetPath = folderPath ? `${folderPath}/${cleanName}` : cleanName;
+        const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${targetPath}`;
 
         let existingSha = null;
         try {
@@ -386,13 +462,13 @@
           if (resData.content && resData.content.download_url) {
             fileItem.url = resData.content.download_url;
           }
-          await idb.put(fileItem);
+          await idb.put(fileItem, 'files');
           render();
           notify(`ĐÃ LÊN ĐÁM MÂY THÀNH CÔNG! Mọi máy khác đều xem được.`);
           return true;
         } else {
           const err = await res.json().catch(() => ({}));
-          notify(`GitHub từ chối: ${err.message || 'Mã Token chưa có quyền repo'}.`, true);
+          notify(`GitHub: ${err.message || 'Mã Token chưa có quyền repo'}.`, true);
           return false;
         }
       } catch(e) {
@@ -421,7 +497,7 @@
             isCloud: false
           };
 
-          await idb.put(newFileItem);
+          await idb.put(newFileItem, 'files');
           DB.files.unshift(newFileItem);
           render();
           setLoading(false);
@@ -429,7 +505,7 @@
           if (DB.token) {
             await pushFileToGitHub(newFileItem, dataUrl);
           } else {
-            notify(`Đã lưu "${file.name}" trong máy. Bấm nút [Token] ở trên để đẩy sang máy khác!`);
+            notify(`Đã lưu "${file.name}" trong máy. Bấm [Token] ở trên để đẩy sang máy khác!`);
           }
         };
         reader.readAsDataURL(file);
@@ -471,7 +547,12 @@
         </div>
       `).join('');
 
-      const list = DB.files.filter(f => (DB.curCat === 'all' || f.cat === DB.curCat));
+      const list = DB.files.filter(f => {
+        const matchFolder = (f.folder === DB.curFolder || (!f.folder && DB.curFolder === 'root'));
+        const matchCat = (DB.curCat === 'all' || f.cat === DB.curCat);
+        return matchFolder && matchCat;
+      });
+
       const grid = document.getElementById('fileGrid');
       const emp = document.getElementById('emptyView');
 
@@ -602,14 +683,24 @@
     document.getElementById('btnNewFolderInline').addEventListener('click', openFolderModal);
     document.getElementById('btnCloseFolder').addEventListener('click', () => document.getElementById('folderModal').classList.add('hidden'));
     document.getElementById('btnCancelFolder').addEventListener('click', () => document.getElementById('folderModal').classList.add('hidden'));
-    document.getElementById('btnSaveFolder').addEventListener('click', () => {
+    
+    document.getElementById('btnSaveFolder').addEventListener('click', async () => {
       const n = document.getElementById('folderNameInput').value.trim();
       if (!n) return;
-      DB.folders.push({ id: 'f-' + Date.now(), name: n, parent: DB.curFolder });
+
+      const newFolderId = 'f-' + Date.now();
+      const newFolderObj = { id: newFolderId, name: n, parent: DB.curFolder };
+
+      DB.folders.push(newFolderObj);
+      await idb.put(newFolderObj, 'folders');
       localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
       document.getElementById('folderModal').classList.add('hidden');
       render();
       notify('Đã tạo thư mục: ' + n);
+
+      if (DB.token) {
+        pushFolderToGitHub(n);
+      }
     });
 
     document.getElementById('breadcrumb').addEventListener('click', (e) => {
@@ -628,7 +719,9 @@
       }
       const del = e.target.closest('[data-fdel]');
       if (del) {
-        DB.folders = DB.folders.filter(x => x.id !== del.dataset.fdel);
+        const idToDelete = del.dataset.fdel;
+        DB.folders = DB.folders.filter(x => x.id !== idToDelete);
+        idb.delete(idToDelete, 'folders');
         localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
         render();
         notify('Đã xoá thư mục.');
@@ -660,7 +753,7 @@
       if (del) {
         const id = del.dataset.del;
         DB.files = DB.files.filter(x => x.id !== id);
-        await idb.delete(id);
+        await idb.delete(id, 'files');
         render();
         notify('Đã xoá tệp.');
       }
@@ -673,10 +766,10 @@
       if (v && DB.target) {
         if (DB.target.type === 'file') {
           const f = DB.files.find(x => x.id === DB.target.id);
-          if (f) { f.name = v; f.cat = getCat(v); await idb.put(f); }
+          if (f) { f.name = v; f.cat = getCat(v); await idb.put(f, 'files'); }
         } else {
           const f = DB.folders.find(x => x.id === DB.target.id);
-          if (f) { f.name = v; localStorage.setItem('gc_folders', JSON.stringify(DB.folders)); }
+          if (f) { f.name = v; await idb.put(f, 'folders'); localStorage.setItem('gc_folders', JSON.stringify(DB.folders)); }
         }
         render();
         notify('Đã đổi tên thành công!');
