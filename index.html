@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitCloud Drive - Kho Lưu Trữ Đám Mây</title>
+  <title>GitCloud Drive - Lưu Trữ Đám Mây</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -90,6 +90,7 @@
     </div>
   </main>
 
+  <!-- Modal Nhập Token -->
   <div id="tokenModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
       <div class="flex items-center justify-between pb-2 border-b border-slate-100">
@@ -104,7 +105,7 @@
       </p>
 
       <div class="relative">
-        <input type="text" id="tokenInput" placeholder="Dán mã ghp_... vào đây" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 font-mono text-xs">
+        <input type="text" id="tokenInput" placeholder="Dán mã ghp_... vào đây" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 font-mono text-xs pr-12">
         <button id="btnClearTokenInput" class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs font-semibold">Xoá</button>
       </div>
       
@@ -120,6 +121,7 @@
     </div>
   </div>
 
+  <!-- Modal Tạo Thư Mục -->
   <div id="folderModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
       <div class="flex items-center justify-between pb-2 border-b border-slate-100">
@@ -134,6 +136,7 @@
     </div>
   </div>
 
+  <!-- Modal Đổi Tên -->
   <div id="renameModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
       <div class="flex items-center justify-between pb-2 border-b border-slate-100">
@@ -148,6 +151,7 @@
     </div>
   </div>
 
+  <!-- Toast -->
   <div id="toast" class="fixed bottom-4 right-4 z-50 hidden bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs shadow-lg transition-all duration-300"></div>
 
   <script>
@@ -156,14 +160,21 @@
 
     function sanitizeToken(raw) {
       if (!raw) return '';
-      return raw.replace(/[^a-zA-Z0-9_]/g, '');
+      let clean = '';
+      for (let i = 0; i < raw.length; i++) {
+        const code = raw.charCodeAt(i);
+        if ((code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 95) {
+          clean += raw[i];
+        }
+      }
+      return clean;
     }
 
     const idb = {
       db: null,
       init() {
         return new Promise((resolve) => {
-          const req = indexedDB.open('GitCloudPermanentDB', 1);
+          const req = indexedDB.open('GitCloudPermanentDB_v3', 1);
           req.onupgradeneeded = (e) => {
             const d = e.target.result;
             if (!d.objectStoreNames.contains('files')) {
@@ -279,7 +290,43 @@
           const cleanToken = sanitizeToken(DB.token);
           if (cleanToken) headers['Authorization'] = 'Bearer ' + cleanToken;
 
-          let res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents`, { headers }); if (res.ok) { let data = await res.json(); cloudItems = data.filter(i => i.type === 'file' && i.name !== 'index.html' && i.name !== 'README.md'); }  let upRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/uploads`, { headers }); if (upRes.ok) { let upData = await upRes.json(); if (Array.isArray(upData)) cloudItems = cloudItems.concat(upData.filter(i => i.type === 'file')); } } catch(netErr) {}  const cloudFiles = cloudItems.map(i => ({ id: 'gh-' + i.sha, folder: 'root', name: i.name, cat: getCat(i.name), size: i.size \vert{}\vert{} 0, url: i.download_url, isCloud: true }));  const merged = [...cloudFiles]; localFiles.forEach(lf => { if (!merged.some(m => m.name === lf.name)) { merged.push(lf); } });  DB.files = merged; render(); notify(`Đã cập nhật ${DB.files.length} tệp!`);
+          let res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents`, { headers });
+          if (res.ok) {
+            let data = await res.json();
+            cloudItems = data.filter(i => i.type === 'file' && i.name !== 'index.html' && i.name !== 'README.md');
+          }
+
+          let upRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/uploads`, { headers });
+          if (upRes.ok) {
+            let upData = await upRes.json();
+            if (Array.isArray(upData)) cloudItems = cloudItems.concat(upData.filter(i => i.type === 'file'));
+          }
+        } catch(netErr) {}
+
+        const cloudFiles = cloudItems.map(i => ({
+          id: 'gh-' + i.sha,
+          folder: 'root',
+          name: i.name,
+          cat: getCat(i.name),
+          size: i.size || 0,
+          url: i.download_url,
+          isCloud: true
+        }));
+
+        const merged = [...cloudFiles];
+        localFiles.forEach(lf => {
+          const cloudMatch = merged.find(m => m.name === lf.name);
+          if (cloudMatch) {
+            lf.isCloud = true;
+            lf.url = cloudMatch.url;
+          } else {
+            merged.push(lf);
+          }
+        });
+
+        DB.files = merged;
+        render();
+        notify(`Đã cập nhật ${DB.files.length} tệp!`);
       } catch (err) {
         console.warn(err);
       } finally {
@@ -301,6 +348,27 @@
         const cleanName = fileItem.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${cleanName}`;
 
+        let existingSha = null;
+        try {
+          const checkRes = await fetch(apiUrl, {
+            headers: {
+              'Authorization': 'Bearer ' + cleanToken,
+              'Accept': 'application/vnd.github.v3+json'
+            }
+          });
+          if (checkRes.ok) {
+            const checkData = await checkRes.json();
+            existingSha = checkData.sha;
+          }
+        } catch(e) {}
+
+        const payload = {
+          message: 'Upload ' + cleanName + ' via GitCloud Drive',
+          content: b64,
+          branch: 'main'
+        };
+        if (existingSha) payload.sha = existingSha;
+
         const res = await fetch(apiUrl, {
           method: 'PUT',
           headers: {
@@ -308,11 +376,7 @@
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            message: 'Upload ' + cleanName + ' via GitCloud Drive',
-            content: b64,
-            branch: 'main'
-          })
+          body: JSON.stringify(payload)
         });
 
         setLoading(false);
@@ -324,11 +388,11 @@
           }
           await idb.put(fileItem);
           render();
-          notify(`ĐÃ LÊN ĐÁM MÂY! Mọi điện thoại khác đều xem được.`);
+          notify(`ĐÃ LÊN ĐÁM MÂY THÀNH CÔNG! Mọi máy khác đều xem được.`);
           return true;
         } else {
           const err = await res.json().catch(() => ({}));
-          notify(`GitHub: ${err.message || 'Mã Token chưa có quyền repo'}.`, true);
+          notify(`GitHub từ chối: ${err.message || 'Mã Token chưa có quyền repo'}.`, true);
           return false;
         }
       } catch(e) {
@@ -339,7 +403,33 @@
     }
 
     async function uploadDirectlyInApp(file) {
-      setLoading(true, `Đang nạp "${file.name}"...`);  try { const reader = new FileReader(); reader.onload = async () => { const dataUrl = reader.result; const fileId = 'file-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);  const newFileItem = { id: fileId, folder: DB.curFolder, name: file.name, cat: getCat(file.name), size: file.size, url: dataUrl, isCloud: false };  await idb.put(newFileItem); DB.files.unshift(newFileItem); render(); setLoading(false);  if (DB.token) { await pushFileToGitHub(newFileItem, dataUrl); } else { notify(`Đã lưu "${file.name}" trong máy. Bấm [Token] ở trên để đẩy sang máy khác!`);
+      setLoading(true, `Đang nạp "${file.name}"...`);
+
+      try {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const dataUrl = reader.result;
+          const fileId = 'file-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+
+          const newFileItem = {
+            id: fileId,
+            folder: DB.curFolder,
+            name: file.name,
+            cat: getCat(file.name),
+            size: file.size,
+            url: dataUrl,
+            isCloud: false
+          };
+
+          await idb.put(newFileItem);
+          DB.files.unshift(newFileItem);
+          render();
+          setLoading(false);
+
+          if (DB.token) {
+            await pushFileToGitHub(newFileItem, dataUrl);
+          } else {
+            notify(`Đã lưu "${file.name}" trong máy. Bấm nút [Token] ở trên để đẩy sang máy khác!`);
           }
         };
         reader.readAsDataURL(file);
@@ -372,4 +462,251 @@
         <div class="bg-white p-2.5 rounded-xl border border-slate-200 flex items-center justify-between group cursor-pointer hover:border-indigo-400 shadow-2xs" data-fcard="${x.id}">
           <div class="flex items-center space-x-2 truncate">
             <i data-lucide="folder" class="w-4 h-4 text-indigo-600 shrink-0"></i>
-            <span class="font-semibold text-xs text-slate-800 truncate">${x
+            <span class="font-semibold text-xs text-slate-800 truncate">${x.name}</span>
+          </div>
+          <div class="flex items-center space-x-1" onclick="event.stopPropagation()">
+            <button class="p-1 text-slate-400 hover:text-amber-600" data-fren="${x.id}" title="Đổi tên"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+            <button class="p-1 text-slate-400 hover:text-rose-600" data-fdel="${x.id}" title="Xoá"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
+      `).join('');
+
+      const list = DB.files.filter(f => (DB.curCat === 'all' || f.cat === DB.curCat));
+      const grid = document.getElementById('fileGrid');
+      const emp = document.getElementById('emptyView');
+
+      if (list.length === 0 && subs.length === 0) {
+        emp.classList.remove('hidden');
+        grid.innerHTML = '';
+      } else {
+        emp.classList.add('hidden');
+        grid.innerHTML = list.map(f => {
+          let preview = '';
+          if (f.cat === 'image') {
+            preview = `<div class="h-32 bg-slate-100 rounded-lg overflow-hidden mb-2"><img src="${f.url}" class="w-full h-full object-cover"></div>`;
+          } else if (f.cat === 'video') {
+            preview = `<div class="h-32 bg-slate-900 rounded-lg flex items-center justify-center text-white mb-2"><i data-lucide="play-circle" class="w-8 h-8"></i></div>`;
+          }
+
+          let cloudBadge = '';
+          let syncBtn = '';
+
+          if (f.isCloud) {
+            cloudBadge = '<span class="text-emerald-600 font-semibold flex items-center"><i data-lucide="check" class="w-3 h-3 mr-0.5"></i>Đám mây</span>';
+          } else {
+            cloudBadge = '<span class="text-amber-600 font-semibold">Chưa lên đám mây</span>';
+            syncBtn = `<button class="px-2 py-1 bg-indigo-600 text-white rounded text-[10px] font-semibold flex items-center space-x-1" data-push="${f.id}" title="Đẩy tệp này lên Đám Mây để máy khác thấy">
+              <i data-lucide="cloud-upload" class="w-3 h-3"></i><span>Đẩy lên Đám Mây</span>
+            </button>`;
+          }
+
+          return `
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+              <div>
+                ${preview}
+                <div class="font-semibold text-xs text-slate-900 truncate mb-1" title="${f.name}">${f.name}</div>
+                <div class="text-[10px] text-slate-400 mb-2 flex items-center justify-between">
+                  <span>${(f.size/1024).toFixed(1)} KB</span>
+                  ${cloudBadge}
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                <div>${syncBtn}</div>
+                <div class="flex items-center space-x-1">
+                  <button class="p-1 text-slate-400 hover:text-amber-600" data-ren="${f.id}" title="Đổi tên"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                  <a href="${f.url}" target="_blank" download="${f.name}" class="p-1 text-slate-400 hover:text-indigo-600" title="Tải về"><i data-lucide="download" class="w-3.5 h-3.5"></i></a>
+                  <button class="p-1 text-slate-400 hover:text-rose-600" data-del="${f.id}" title="Xoá"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      lucide.createIcons();
+    }
+
+    document.getElementById('btnSync').addEventListener('click', syncCloud);
+
+    document.getElementById('btnToken').addEventListener('click', () => {
+      document.getElementById('tokenInput').value = DB.token;
+      document.getElementById('tokenVerifyStatus').className = 'hidden';
+      document.getElementById('tokenModal').classList.remove('hidden');
+    });
+    document.getElementById('btnCloseToken').addEventListener('click', () => document.getElementById('tokenModal').classList.add('hidden'));
+    document.getElementById('btnCancelToken').addEventListener('click', () => document.getElementById('tokenModal').classList.add('hidden'));
+    
+    document.getElementById('btnClearTokenInput').addEventListener('click', () => {
+      document.getElementById('tokenInput').value = '';
+      document.getElementById('tokenVerifyStatus').className = 'hidden';
+    });
+
+    document.getElementById('btnSaveToken').addEventListener('click', async () => {
+      const rawVal = document.getElementById('tokenInput').value;
+      const clean = sanitizeToken(rawVal);
+      const statusBox = document.getElementById('tokenVerifyStatus');
+      
+      if (!clean) {
+        DB.token = '';
+        localStorage.removeItem('gc_token');
+        document.getElementById('tokenModal').classList.add('hidden');
+        render();
+        notify('Đã xoá Token.');
+        return;
+      }
+
+      document.getElementById('tokenInput').value = clean;
+      statusBox.className = 'p-2.5 rounded-lg text-[11px] bg-indigo-50 text-indigo-700 block';
+      statusBox.textContent = 'Đang kiểm tra quyền ghi vào kho GitHub...';
+
+      try {
+        const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}`, {
+          headers: { 
+            'Authorization': 'Bearer ' + clean, 
+            'Accept': 'application/vnd.github.v3+json' 
+          }
+        });
+
+        if (res.ok) {
+          const repoData = await res.json();
+          if (repoData.permissions && repoData.permissions.push) {
+            DB.token = clean;
+            localStorage.setItem('gc_token', clean);
+            statusBox.className = 'p-2.5 rounded-lg text-[11px] bg-emerald-50 text-emerald-800 block';
+            statusBox.innerHTML = '<b>Kết nối hoàn hảo!</b> Token có đầy đủ quyền GHI lên đám mây. Mọi máy khác sẽ thấy ảnh!';
+            setTimeout(() => {
+              document.getElementById('tokenModal').classList.add('hidden');
+              render();
+              syncCloud();
+            }, 1000);
+          } else {
+            statusBox.className = 'p-2.5 rounded-lg text-[11px] bg-rose-50 text-rose-800 block';
+            statusBox.innerHTML = '<b>CẢNH BÁO:</b> Token này chỉ có quyền ĐỌC, <b>KHÔNG có quyền GHI</b>! Hãy bấm vào link bên dưới để tạo token và tích chọn ô <b>repo</b> nhé!';
+          }
+        } else {
+          const err = await res.json().catch(() => ({}));
+          statusBox.className = 'p-2.5 rounded-lg text-[11px] bg-rose-50 text-rose-800 block';
+          statusBox.innerHTML = `<b>Lỗi Token:</b> ${err.message || 'Mã Token không đúng'}. Hãy bấm vào link bên dưới để tạo lại.`;
+        }
+      } catch(e) {
+        statusBox.className = 'p-2.5 rounded-lg text-[11px] bg-rose-50 text-rose-800 block';
+        statusBox.textContent = `Lỗi kiểm tra: ${e.message}`;
+      }
+    });
+
+    function openFolderModal() {
+      document.getElementById('folderNameInput').value = '';
+      document.getElementById('folderModal').classList.remove('hidden');
+    }
+    document.getElementById('btnNewFolderHeader').addEventListener('click', openFolderModal);
+    document.getElementById('btnNewFolderInline').addEventListener('click', openFolderModal);
+    document.getElementById('btnCloseFolder').addEventListener('click', () => document.getElementById('folderModal').classList.add('hidden'));
+    document.getElementById('btnCancelFolder').addEventListener('click', () => document.getElementById('folderModal').classList.add('hidden'));
+    document.getElementById('btnSaveFolder').addEventListener('click', () => {
+      const n = document.getElementById('folderNameInput').value.trim();
+      if (!n) return;
+      DB.folders.push({ id: 'f-' + Date.now(), name: n, parent: DB.curFolder });
+      localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
+      document.getElementById('folderModal').classList.add('hidden');
+      render();
+      notify('Đã tạo thư mục: ' + n);
+    });
+
+    document.getElementById('breadcrumb').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-nav]');
+      if (btn) { DB.curFolder = btn.dataset.nav; render(); }
+    });
+
+    document.getElementById('folderContainer').addEventListener('click', (e) => {
+      const ren = e.target.closest('[data-fren]');
+      if (ren) {
+        DB.target = { type: 'folder', id: ren.dataset.fren };
+        const f = DB.folders.find(x => x.id === ren.dataset.fren);
+        document.getElementById('renameInput').value = f ? f.name : '';
+        document.getElementById('renameModal').classList.remove('hidden');
+        return;
+      }
+      const del = e.target.closest('[data-fdel]');
+      if (del) {
+        DB.folders = DB.folders.filter(x => x.id !== del.dataset.fdel);
+        localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
+        render();
+        notify('Đã xoá thư mục.');
+        return;
+      }
+      const card = e.target.closest('[data-fcard]');
+      if (card) { DB.curFolder = card.dataset.fcard; render(); }
+    });
+
+    document.getElementById('fileGrid').addEventListener('click', async (e) => {
+      const pushBtn = e.target.closest('[data-push]');
+      if (pushBtn) {
+        const fileItem = DB.files.find(x => x.id === pushBtn.dataset.push);
+        if (fileItem && fileItem.url) {
+          await pushFileToGitHub(fileItem, fileItem.url);
+        }
+        return;
+      }
+
+      const ren = e.target.closest('[data-ren]');
+      if (ren) {
+        DB.target = { type: 'file', id: ren.dataset.ren };
+        const f = DB.files.find(x => x.id === ren.dataset.ren);
+        document.getElementById('renameInput').value = f ? f.name : '';
+        document.getElementById('renameModal').classList.remove('hidden');
+        return;
+      }
+      const del = e.target.closest('[data-del]');
+      if (del) {
+        const id = del.dataset.del;
+        DB.files = DB.files.filter(x => x.id !== id);
+        await idb.delete(id);
+        render();
+        notify('Đã xoá tệp.');
+      }
+    });
+
+    document.getElementById('btnCloseRename').addEventListener('click', () => document.getElementById('renameModal').classList.add('hidden'));
+    document.getElementById('btnCancelRename').addEventListener('click', () => document.getElementById('renameModal').classList.add('hidden'));
+    document.getElementById('btnSaveRename').addEventListener('click', async () => {
+      const v = document.getElementById('renameInput').value.trim();
+      if (v && DB.target) {
+        if (DB.target.type === 'file') {
+          const f = DB.files.find(x => x.id === DB.target.id);
+          if (f) { f.name = v; f.cat = getCat(v); await idb.put(f); }
+        } else {
+          const f = DB.folders.find(x => x.id === DB.target.id);
+          if (f) { f.name = v; localStorage.setItem('gc_folders', JSON.stringify(DB.folders)); }
+        }
+        render();
+        notify('Đã đổi tên thành công!');
+      }
+      document.getElementById('renameModal').classList.add('hidden');
+    });
+
+    const fInput = document.getElementById('fileInput');
+    document.getElementById('dropZone').addEventListener('click', () => fInput.click());
+
+    fInput.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      files.forEach(uploadDirectlyInApp);
+      fInput.value = '';
+    });
+
+    document.getElementById('tabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab-btn');
+      if (!btn) return;
+      document.querySelectorAll('.tab-btn').forEach(x => x.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200');
+      btn.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white';
+      DB.curCat = btn.dataset.cat;
+      render();
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await idb.init();
+      render();
+      syncCloud();
+    });
+  </script>
+</body>
+</html>
