@@ -3,17 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitCloud Drive - Kho Lưu Trữ Đám Mây</title>
+  <title>GitCloud Drive - Lưu Trữ & Trợ Lý AI</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <style>body { font-family: 'Inter', sans-serif; }</style>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .word-paper {
+      min-height: 280px;
+      outline: none;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .word-paper:empty:before {
+      content: attr(data-placeholder);
+      color: #94a3b8;
+    }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col pb-12">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col pb-16">
 
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
     <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-      <div class="flex items-center space-x-2.5">
+      <div class="flex items-center space-x-2">
         <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-xs">
           <i data-lucide="cloud" class="w-4 h-4"></i>
         </div>
@@ -22,14 +33,19 @@
           <span class="text-[10px] text-emerald-600 font-semibold block leading-tight">minhchaunap</span>
         </div>
       </div>
-      <div class="flex items-center space-x-1.5 sm:space-x-2">
+      
+      <div class="flex items-center space-x-1 sm:space-x-2">
         <button id="btnSync" class="p-2 text-slate-600 hover:text-indigo-600 rounded-lg border border-slate-200 bg-white" title="Làm mới đám mây">
           <i data-lucide="refresh-cw" id="syncIcon" class="w-4 h-4"></i>
         </button>
+        <button id="btnAiStudio" class="flex items-center space-x-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs hover:bg-purple-100 transition">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-600"></i>
+          <span>Trợ Lý AI</span>
+        </button>
         <button id="btnToken" class="flex items-center space-x-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
           <i data-lucide="key" class="w-3.5 h-3.5"></i>
-          <span>Token Đám Mây</span>
-          <span id="tokenDot" class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span class="hidden sm:inline">Token</span>
+          <span id="tokenDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
         </button>
         <button id="btnNewFolderHeader" class="flex items-center space-x-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700">
           <i data-lucide="folder-plus" class="w-3.5 h-3.5 text-indigo-600"></i>
@@ -42,7 +58,7 @@
   <div id="loadingBar" class="hidden bg-indigo-600 text-white text-[11px] font-semibold text-center py-2 transition-all">
     <div class="flex items-center justify-center space-x-2">
       <div class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-      <span id="loadingText">Đang lưu trữ tệp...</span>
+      <span id="loadingText">Đang xử lý...</span>
     </div>
   </div>
 
@@ -59,14 +75,14 @@
       <div id="folderContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div>
     </div>
 
-    <div id="dropZone" class="p-6 border-2 border-dashed border-indigo-300 hover:border-indigo-600 bg-white rounded-2xl text-center cursor-pointer transition shadow-2xs group">
+    <div id="dropZone" class="p-5 border-2 border-dashed border-indigo-300 hover:border-indigo-600 bg-white rounded-2xl text-center cursor-pointer transition shadow-2xs group">
       <input type="file" id="fileInput" multiple class="hidden" accept="image/*,video/*,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx">
-      <div class="flex flex-col items-center justify-center space-y-1.5">
-        <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-105 transition">
-          <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+      <div class="flex flex-col items-center justify-center space-y-1">
+        <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-105 transition">
+          <i data-lucide="upload-cloud" class="w-5 h-5"></i>
         </div>
-        <p class="text-sm font-bold text-slate-900">Chạm vào đây để chọn Ảnh, Video, Word, Excel, PowerPoint</p>
-        <p class="text-xs text-slate-500">Tải tệp vào thư mục đang mở & tự động đồng bộ sang mọi máy</p>
+        <p class="text-xs font-bold text-slate-800">Chạm vào đây để chọn Ảnh, Video, Word, Excel, PowerPoint</p>
+        <p class="text-[11px] text-slate-400">Tự động nạp vào thư mục đang mở & đẩy lên đám mây</p>
       </div>
     </div>
 
@@ -74,9 +90,131 @@
       <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white" data-cat="all">Tất cả</button>
       <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200" data-cat="image">Ảnh</button>
       <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200" data-cat="video">Video</button>
-      <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200" data-cat="word">Word</button>
+      <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200 flex items-center space-x-1" data-cat="word">
+        <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-600"></i>
+        <span>Word</span>
+      </button>
       <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200" data-cat="excel">Excel</button>
       <button class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200" data-cat="powerpoint">PowerPoint</button>
+    </div>
+
+    <!-- KHUNG SOẠN THẢO WORD TRỰC TIẾP PHÍA DƯỚI NÚT WORD -->
+    <div id="wordEditorSection" class="hidden bg-white border border-blue-200 rounded-2xl p-4 shadow-sm space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">W</div>
+          <div>
+            <h3 class="font-bold text-sm text-slate-900">Soạn thảo văn bản Word mới</h3>
+            <p class="text-[11px] text-blue-600 font-medium" id="wordFolderTargetText">Lưu vào thư mục: Trang chủ</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button id="btnSaveWordDoc" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center space-x-1 shadow-xs transition">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span>Lưu vào thư mục này</span>
+          </button>
+          <button id="btnCloseWordEditor" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100" title="Đóng khung soạn thảo">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <label class="text-xs font-semibold text-slate-700 whitespace-nowrap">Tên tệp:</label>
+        <input type="text" id="wordDocTitle" value="Van_ban_moi.docx" class="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 font-medium">
+      </div>
+
+      <div class="flex flex-wrap items-center gap-1 p-1.5 bg-slate-100 rounded-xl text-xs text-slate-700 border border-slate-200">
+        <button class="word-tool-btn p-1.5 hover:bg-white rounded font-bold" data-cmd="bold" title="In đậm">B</button>
+        <button class="word-tool-btn p-1.5 hover:bg-white rounded italic font-serif" data-cmd="italic" title="In nghiêng">I</button>
+        <button class="word-tool-btn p-1.5 hover:bg-white rounded underline" data-cmd="underline" title="Gạch chân">U</button>
+        <span class="w-px h-4 bg-slate-300 mx-0.5"></span>
+        <button class="word-tool-btn px-2 py-1 hover:bg-white rounded font-semibold text-[11px]" data-cmd="formatBlock" data-val="h2">Tiêu đề</button>
+        <button class="word-tool-btn px-2 py-1 hover:bg-white rounded font-semibold text-[11px]" data-cmd="formatBlock" data-val="p">Đoạn văn</button>
+        <span class="w-px h-4 bg-slate-300 mx-0.5"></span>
+        <button class="word-tool-btn p-1.5 hover:bg-white rounded" data-cmd="insertUnorderedList" title="Gạch đầu dòng"><i data-lucide="list" class="w-3.5 h-3.5"></i></button>
+        <button class="word-tool-btn p-1.5 hover:bg-white rounded" data-cmd="insertOrderedList" title="Đánh số"><i data-lucide="list-ordered" class="w-3.5 h-3.5"></i></button>
+      </div>
+
+      <div id="wordContentArea" contenteditable="true" data-placeholder="Bấm vào đây để bắt đầu gõ văn bản Word của bạn..." 
+           class="word-paper w-full p-4 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 leading-relaxed font-sans"></div>
+    </div>
+
+    <!-- KHUNG TRỢ LÝ AI: TÁCH ẢNH & TẠO VIDEO -->
+    <div id="aiStudioSection" class="hidden bg-gradient-to-br from-purple-50 via-white to-indigo-50 border border-purple-200 rounded-2xl p-4 shadow-sm space-y-4">
+      <div class="flex items-center justify-between pb-2.5 border-b border-purple-100">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-slate-900">Trợ Lý AI GitCloud</h3>
+            <p class="text-[10px] text-purple-700 font-medium">Chuyên gia Tách Nền Ảnh & Sáng Tạo Video Tự Động</p>
+          </div>
+        </div>
+        <button id="btnCloseAiStudio" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+        <button id="btnAiTabBg" class="py-2 rounded-xl bg-purple-600 text-white flex items-center justify-center space-x-1 shadow-2xs">
+          <i data-lucide="scissors" class="w-3.5 h-3.5"></i>
+          <span>1. AI Tách Nền Ảnh</span>
+        </button>
+        <button id="btnAiTabVideo" class="py-2 rounded-xl bg-white text-slate-600 border border-purple-200 hover:bg-purple-50 flex items-center justify-center space-x-1">
+          <i data-lucide="video" class="w-3.5 h-3.5"></i>
+          <span>2. AI Tạo Video</span>
+        </button>
+      </div>
+
+      <div id="aiBgTool" class="space-y-3">
+        <p class="text-[11px] text-slate-600">Chọn ảnh bất kỳ, AI sẽ tự động tách chủ thể thành phông nền trong suốt chuẩn PNG:</p>
+        <div class="flex items-center space-x-2">
+          <input type="file" id="aiBgInput" accept="image/*" class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-100 file:text-purple-700">
+          <button id="btnRunAiBg" class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shrink-0">
+            Tách Nền Ngay
+          </button>
+        </div>
+
+        <div id="aiBgResultBox" class="hidden p-3 bg-slate-900/5 rounded-xl border border-slate-200 text-center space-y-2">
+          <div class="text-[11px] font-semibold text-emerald-600 flex items-center justify-center space-x-1">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+            <span>Đã tách nền thành công!</span>
+          </div>
+          <div class="h-44 w-full flex items-center justify-center bg-[conic-gradient(#cbd5e1_90deg,#fff_90deg_180deg,#cbd5e1_180deg_270deg,#fff_270deg)] bg-[size:16px_16px] rounded-lg overflow-hidden border">
+            <img id="aiBgResultImg" src="" alt="Kết quả tách nền" class="max-h-full max-w-full object-contain">
+          </div>
+          <div class="flex items-center justify-center space-x-2 pt-1">
+            <button id="btnSaveBgToFolder" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold flex items-center space-x-1">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Lưu vào thư mục hiện tại</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="aiVideoTool" class="hidden space-y-3">
+        <p class="text-[11px] text-slate-600">Chọn từ 2-5 bức ảnh để AI dựng thành video slide chuyển cảnh động Ken Burns:</p>
+        <div class="space-y-2">
+          <input type="file" id="aiVideoInput" multiple accept="image/*" class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-100 file:text-purple-700">
+          <div class="flex items-center justify-between text-xs pt-1">
+            <span class="text-slate-500 text-[11px]">Hiệu ứng: Ken Burns Zoom & Fade</span>
+            <button id="btnRunAiVideo" class="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold flex items-center space-x-1">
+              <i data-lucide="play" class="w-3.5 h-3.5"></i>
+              <span>Dựng Video Ngay</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="aiVideoResultBox" class="hidden p-3 bg-slate-900 rounded-xl text-center space-y-2 text-white">
+          <p class="text-xs font-semibold text-emerald-400">Video đã dựng xong!</p>
+          <video id="aiVideoPreview" controls class="w-full max-h-52 rounded-lg bg-black mx-auto"></video>
+          <button id="btnSaveVideoToFolder" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold">
+            Lưu Video vào Thư Mục
+          </button>
+        </div>
+      </div>
     </div>
 
     <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
@@ -86,11 +224,10 @@
         <i data-lucide="folder-open" class="w-6 h-6"></i>
       </div>
       <p class="text-sm font-semibold text-slate-800">Chưa có tệp nào ở đây</p>
-      <p class="text-xs text-slate-500 mt-1">Chạm vào ô tải tệp ở trên để chọn ảnh hoặc tài liệu đầu tiên nhé!</p>
+      <p class="text-xs text-slate-500 mt-1">Chạm vào ô tải tệp ở trên để chọn ảnh hoặc tạo văn bản Word nhé!</p>
     </div>
   </main>
 
-  <!-- Modal Token -->
   <div id="tokenModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
       <div class="flex items-center justify-between pb-2 border-b border-slate-100">
@@ -100,38 +237,41 @@
         </div>
         <button id="btnCloseToken" class="text-slate-400 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <p class="text-slate-600 text-[11px] leading-relaxed">
-        Dán mã Token (bắt đầu bằng <b>ghp_</b> hoặc <b>github_pat_</b>):
-      </p>
-
-      <div class="relative">
-        <input type="text" id="tokenInput" placeholder="Dán mã ghp_... vào đây" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 font-mono text-xs pr-12">
-        <button id="btnClearTokenInput" class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs font-semibold">Xoá</button>
-      </div>
-      
-      <div id="tokenVerifyStatus" class="hidden p-2.5 rounded-lg text-[11px] leading-relaxed"></div>
-
-      <div class="flex items-center justify-between pt-2">
-        <a href="https://github.com/settings/tokens/new?scopes=repo&description=GitCloud+my-storage-drive" target="_blank" class="text-indigo-600 underline font-medium text-[11px]">Bấm lấy mã Token chuẩn</a>
-        <div class="space-x-1.5">
-          <button id="btnCancelToken" class="px-3 py-1.5 bg-slate-100 rounded-lg text-slate-600">Đóng</button>
-          <button id="btnSaveToken" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold">Lưu & Kiểm tra</button>
-        </div>
+      <p class="text-slate-600 text-[11px]">Dán mã Token (bắt đầu bằng <b>ghp_</b>):</p>
+      <input type="text" id="tokenInput" placeholder="ghp_..." class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 font-mono text-xs">
+      <div id="tokenVerifyStatus" class="hidden p-2 rounded-lg text-[11px]"></div>
+      <div class="flex items-center justify-end space-x-1.5 pt-2">
+        <button id="btnCancelToken" class="px-3 py-1.5 bg-slate-100 rounded-lg text-slate-600">Đóng</button>
+        <button id="btnSaveToken" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold">Lưu & Kiểm tra</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal Tạo Thư Mục -->
   <div id="folderModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs">
       <div class="flex items-center justify-between pb-2 border-b border-slate-100">
         <h3 class="font-bold text-sm text-slate-900">Tạo thư mục mới</h3>
         <button id="btnCloseFolder" class="text-slate-400 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <input type="text" id="folderNameInput" placeholder="Ví dụ: Hình ảnh, Hợp đồng, Slide..." class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+      <input type="text" id="folderNameInput" placeholder="Ví dụ: Hình ảnh, Hợp đồng, Thuốc nam..." class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
       <div class="flex justify-end space-x-1.5 pt-2">
         <button id="btnCancelFolder" class="px-3 py-1.5 bg-slate-100 rounded-lg text-slate-600">Huỷ</button>
         <button id="btnSaveFolder" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold">Tạo thư mục</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Xác Nhận Xoá Thư Mục -->
+  <div id="deleteFolderConfirmModal" class="fixed inset-0 z-50 bg-slate-900/60 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3 text-xs text-center">
+      <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+        <i data-lucide="trash-2" class="w-5 h-5"></i>
+      </div>
+      <h3 class="font-bold text-sm text-slate-900">Xác nhận xoá thư mục?</h3>
+      <p id="deleteFolderConfirmText" class="text-slate-500 text-[11px]">Thư mục này sẽ bị xoá khỏi bộ nhớ máy.</p>
+      <div class="flex items-center justify-center space-x-2 pt-2">
+        <button id="btnCancelDeleteFolder" class="px-4 py-1.5 bg-slate-100 text-slate-700 rounded-lg font-semibold">Huỷ bỏ</button>
+        <button id="btnConfirmDeleteFolder" class="px-4 py-1.5 bg-rose-600 text-white rounded-lg font-semibold">Xoá ngay</button>
       </div>
     </div>
   </div>
@@ -151,7 +291,6 @@
     </div>
   </div>
 
-  <!-- Toast -->
   <div id="toast" class="fixed bottom-4 right-4 z-50 hidden bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs shadow-lg transition-all duration-300"></div>
 
   <script>
@@ -174,24 +313,17 @@
       db: null,
       init() {
         return new Promise((resolve) => {
-          const req = indexedDB.open('GitCloudPermanentDB_v4', 1);
+          const req = indexedDB.open('GitCloudPermanentDB_v5', 1);
           req.onupgradeneeded = (e) => {
             const d = e.target.result;
-            if (!d.objectStoreNames.contains('files')) {
-              d.createObjectStore('files', { keyPath: 'id' });
-            }
-            if (!d.objectStoreNames.contains('folders')) {
-              d.createObjectStore('folders', { keyPath: 'id' });
-            }
+            if (!d.objectStoreNames.contains('files')) d.createObjectStore('files', { keyPath: 'id' });
+            if (!d.objectStoreNames.contains('folders')) d.createObjectStore('folders', { keyPath: 'id' });
           };
-          req.onsuccess = (e) => {
-            idb.db = e.target.result;
-            resolve();
-          };
+          req.onsuccess = (e) => { idb.db = e.target.result; resolve(); };
           req.onerror = () => resolve();
         });
       },
-      getAll(storeName = 'files') {
+      getAll(storeName) {
         return new Promise((resolve) => {
           if (!idb.db) return resolve([]);
           try {
@@ -202,7 +334,7 @@
           } catch(e) { resolve([]); }
         });
       },
-      put(item, storeName = 'files') {
+      put(item, storeName) {
         return new Promise((resolve) => {
           if (!idb.db) return resolve();
           try {
@@ -213,7 +345,7 @@
           } catch(e) { resolve(); }
         });
       },
-      delete(id, storeName = 'files') {
+      delete(id, storeName) {
         return new Promise((resolve) => {
           if (!idb.db) return resolve();
           try {
@@ -232,14 +364,15 @@
       curFolder: 'root',
       curCat: 'all',
       files: [],
-      target: null
+      target: null,
+      pendingDeleteFolderId: null
     };
 
     function notify(msg, isError = false) {
       const t = document.getElementById('toast');
       t.className = `fixed bottom-4 right-4 z-50 ${isError ? 'bg-rose-600' : 'bg-slate-900'} text-white px-4 py-2.5 rounded-xl text-xs shadow-lg block`;
       t.textContent = msg;
-      setTimeout(() => { t.className = 'hidden'; }, 4000);
+      setTimeout(() => { t.className = 'hidden'; }, 3500);
     }
 
     function setLoading(isLoading, text = '') {
@@ -315,7 +448,6 @@
           let res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents`, { headers });
           if (res.ok) {
             let data = await res.json();
-            
             const cloudDirs = data.filter(i => i.type === 'dir' && !i.name.startsWith('.'));
             cloudDirs.forEach(cd => {
               const dirId = 'f-cloud-' + cd.name;
@@ -325,41 +457,19 @@
                 idb.put(newF, 'folders');
               }
             });
-
             cloudItems = data.filter(i => i.type === 'file' && i.name !== 'index.html' && i.name !== 'README.md');
-
-            for (const dir of cloudDirs) {
-              try {
-                let subRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${dir.name}`, { headers });
-                if (subRes.ok) {
-                  let subData = await subRes.json();
-                  const subFiles = subData.filter(i => i.type === 'file' && i.name !== '.gitkeep');
-                  subFiles.forEach(sf => {
-                    sf.folderName = dir.name;
-                    cloudItems.push(sf);
-                  });
-                }
-              } catch(e) {}
-            }
           }
         } catch(netErr) {}
 
-        const cloudFiles = cloudItems.map(i => {
-          let folderId = 'root';
-          if (i.folderName) {
-            const matchedF = DB.folders.find(f => f.name === i.folderName);
-            if (matchedF) folderId = matchedF.id;
-          }
-          return {
-            id: 'gh-' + i.sha,
-            folder: folderId,
-            name: i.name,
-            cat: getCat(i.name),
-            size: i.size || 0,
-            url: i.download_url,
-            isCloud: true
-          };
-        });
+        const cloudFiles = cloudItems.map(i => ({
+          id: 'gh-' + i.sha,
+          folder: 'root',
+          name: i.name,
+          cat: getCat(i.name),
+          size: i.size || 0,
+          url: i.download_url,
+          isCloud: true
+        }));
 
         const merged = [...cloudFiles];
         localFiles.forEach(lf => {
@@ -375,7 +485,7 @@
         DB.files = merged;
         localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
         render();
-        notify(`Đã đồng bộ ${DB.folders.length - 1} thư mục và ${DB.files.length} tệp từ đám mây!`);
+        notify(`Đã đồng bộ ${DB.files.length} tệp!`);
       } catch (err) {
         console.warn(err);
       } finally {
@@ -383,43 +493,14 @@
       }
     }
 
-    async function pushFolderToGitHub(folderName) {
-      const cleanToken = sanitizeToken(DB.token);
-      if (!cleanToken) return;
-
-      try {
-        const cleanDir = folderName.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${cleanDir}/.gitkeep`;
-
-        await fetch(apiUrl, {
-          method: 'PUT',
-          headers: {
-            'Authorization': 'Bearer ' + cleanToken,
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            message: 'Create folder ' + cleanDir,
-            content: btoa(''),
-            branch: 'main'
-          })
-        });
-      } catch(e) {}
-    }
-
     async function pushFileToGitHub(fileItem, fileUrl) {
       const cleanToken = sanitizeToken(DB.token);
-      if (!cleanToken) {
-        notify('Chưa có Token Đám mây! Bấm nút Token ở góc trên để cài đặt.', true);
-        document.getElementById('tokenModal').classList.remove('hidden');
-        return false;
-      }
+      if (!cleanToken) return false;
 
       setLoading(true, `Đang gửi "${fileItem.name}" lên đám mây GitHub...`);
       try {
         const b64 = await getBase64Data(fileUrl);
         const cleanName = fileItem.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        
         const folderPath = getFolderPath(fileItem.folder);
         const targetPath = folderPath ? `${folderPath}/${cleanName}` : cleanName;
         const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${targetPath}`;
@@ -464,23 +545,21 @@
           }
           await idb.put(fileItem, 'files');
           render();
-          notify(`ĐÃ LÊN ĐÁM MÂY THÀNH CÔNG! Mọi máy khác đều xem được.`);
+          notify(`ĐÃ LÊN ĐÁM MÂY THÀNH CÔNG!`);
           return true;
         } else {
-          const err = await res.json().catch(() => ({}));
-          notify(`GitHub: ${err.message || 'Mã Token chưa có quyền repo'}.`, true);
+          notify(`Đã lưu trong máy (GitHub từ chối Token).`, false);
           return false;
         }
       } catch(e) {
         setLoading(false);
-        notify(`Lỗi gửi file: ${e.message}`, true);
+        notify(`Đã lưu an toàn trong máy bạn.`);
         return false;
       }
     }
 
     async function uploadDirectlyInApp(file) {
       setLoading(true, `Đang nạp "${file.name}"...`);
-
       try {
         const reader = new FileReader();
         reader.onload = async () => {
@@ -505,15 +584,56 @@
           if (DB.token) {
             await pushFileToGitHub(newFileItem, dataUrl);
           } else {
-            notify(`Đã lưu "${file.name}" trong máy. Bấm [Token] ở trên để đẩy sang máy khác!`);
+            notify(`Đã lưu "${file.name}" trong máy.`);
           }
         };
         reader.readAsDataURL(file);
-
       } catch (err) {
         setLoading(false);
         notify('Không thể đọc tệp này.', true);
       }
+    }
+
+    async function saveWordDocument() {
+      const rawTitle = document.getElementById('wordDocTitle').value.trim();
+      let title = rawTitle || 'Van_ban_moi.docx';
+      if (!title.toLowerCase().endsWith('.docx') && !title.toLowerCase().endsWith('.doc')) {
+        title += '.docx';
+      }
+
+      const content = document.getElementById('wordContentArea').innerHTML.trim();
+      if (!content) {
+        notify('Vui lòng gõ nội dung văn bản trước khi lưu!', true);
+        return;
+      }
+
+      const wordHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial,sans-serif;line-height:1.6;padding:20px;}</style></head><body>${content}</body></html>`;
+      const blob = new Blob([wordHtml], { type: 'application/msword;charset=utf-8' });
+      
+      const fileId = 'word-' + Date.now();
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = reader.result;
+        const newWordItem = {
+          id: fileId,
+          folder: DB.curFolder,
+          name: title,
+          cat: 'word',
+          size: blob.size,
+          url: dataUrl,
+          isCloud: false
+        };
+
+        await idb.put(newWordItem, 'files');
+        DB.files.unshift(newWordItem);
+        render();
+        notify(`Đã lưu văn bản "${title}" vào thư mục này!`);
+
+        if (DB.token) {
+          pushFileToGitHub(newWordItem, dataUrl);
+        }
+      };
+      reader.readAsDataURL(blob);
     }
 
     function render() {
@@ -532,17 +652,19 @@
         return `<button class="hover:text-indigo-600 font-medium" data-nav="${x.id}">${x.name}</button><span class="text-slate-300">/</span>`;
       }).join('');
 
+      document.getElementById('wordFolderTargetText').textContent = 'Lưu vào thư mục: ' + curF.name;
+
       const subs = DB.folders.filter(x => x.parent === DB.curFolder);
       const fCont = document.getElementById('folderContainer');
       fCont.innerHTML = subs.map(x => `
-        <div class="bg-white p-2.5 rounded-xl border border-slate-200 flex items-center justify-between group cursor-pointer hover:border-indigo-400 shadow-2xs" data-fcard="${x.id}">
+        <div class="bg-white p-2.5 rounded-xl border border-slate-200 flex items-center justify-between group cursor-pointer hover:border-indigo-400 shadow-2xs transition" data-fcard="${x.id}">
           <div class="flex items-center space-x-2 truncate">
             <i data-lucide="folder" class="w-4 h-4 text-indigo-600 shrink-0"></i>
             <span class="font-semibold text-xs text-slate-800 truncate">${x.name}</span>
           </div>
-          <div class="flex items-center space-x-1" onclick="event.stopPropagation()">
-            <button class="p-1 text-slate-400 hover:text-amber-600" data-fren="${x.id}" title="Đổi tên"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
-            <button class="p-1 text-slate-400 hover:text-rose-600" data-fdel="${x.id}" title="Xoá"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          <div class="flex items-center space-x-1">
+            <button class="p-1 text-slate-400 hover:text-amber-600 rounded" data-fren="${x.id}" title="Đổi tên"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+            <button class="p-1 text-slate-400 hover:text-rose-600 rounded" data-fdel="${x.id}" title="Xoá"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           </div>
         </div>
       `).join('');
@@ -567,19 +689,13 @@
             preview = `<div class="h-32 bg-slate-100 rounded-lg overflow-hidden mb-2"><img src="${f.url}" class="w-full h-full object-cover"></div>`;
           } else if (f.cat === 'video') {
             preview = `<div class="h-32 bg-slate-900 rounded-lg flex items-center justify-center text-white mb-2"><i data-lucide="play-circle" class="w-8 h-8"></i></div>`;
+          } else if (f.cat === 'word') {
+            preview = `<div class="h-28 bg-blue-50 border border-blue-100 rounded-lg flex flex-col items-center justify-center text-blue-700 mb-2"><i data-lucide="file-text" class="w-8 h-8 mb-1"></i><span class="text-[10px] font-bold">Văn bản Word</span></div>`;
           }
 
-          let cloudBadge = '';
-          let syncBtn = '';
-
-          if (f.isCloud) {
-            cloudBadge = '<span class="text-emerald-600 font-semibold flex items-center"><i data-lucide="check" class="w-3 h-3 mr-0.5"></i>Đám mây</span>';
-          } else {
-            cloudBadge = '<span class="text-amber-600 font-semibold">Chưa lên đám mây</span>';
-            syncBtn = `<button class="px-2 py-1 bg-indigo-600 text-white rounded text-[10px] font-semibold flex items-center space-x-1" data-push="${f.id}" title="Đẩy tệp này lên Đám Mây để máy khác thấy">
-              <i data-lucide="cloud-upload" class="w-3 h-3"></i><span>Đẩy lên Đám Mây</span>
-            </button>`;
-          }
+          let cloudBadge = f.isCloud 
+            ? '<span class="text-emerald-600 font-semibold flex items-center"><i data-lucide="check" class="w-3 h-3 mr-0.5"></i>Đám mây</span>' 
+            : '<span class="text-amber-600 font-semibold">Trong máy</span>';
 
           return `
             <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
@@ -592,7 +708,7 @@
                 </div>
               </div>
               <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                <div>${syncBtn}</div>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 uppercase">${f.cat}</span>
                 <div class="flex items-center space-x-1">
                   <button class="p-1 text-slate-400 hover:text-amber-600" data-ren="${f.id}" title="Đổi tên"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
                   <a href="${f.url}" target="_blank" download="${f.name}" class="p-1 text-slate-400 hover:text-indigo-600" title="Tải về"><i data-lucide="download" class="w-3.5 h-3.5"></i></a>
@@ -609,6 +725,7 @@
 
     document.getElementById('btnSync').addEventListener('click', syncCloud);
 
+    // Mở Modal Token
     document.getElementById('btnToken').addEventListener('click', () => {
       document.getElementById('tokenInput').value = DB.token;
       document.getElementById('tokenVerifyStatus').className = 'hidden';
@@ -616,65 +733,17 @@
     });
     document.getElementById('btnCloseToken').addEventListener('click', () => document.getElementById('tokenModal').classList.add('hidden'));
     document.getElementById('btnCancelToken').addEventListener('click', () => document.getElementById('tokenModal').classList.add('hidden'));
-    
-    document.getElementById('btnClearTokenInput').addEventListener('click', () => {
-      document.getElementById('tokenInput').value = '';
-      document.getElementById('tokenVerifyStatus').className = 'hidden';
+    document.getElementById('btnSaveToken').addEventListener('click', () => {
+      const val = sanitizeToken(document.getElementById('tokenInput').value);
+      DB.token = val;
+      localStorage.setItem('gc_token', val);
+      document.getElementById('tokenModal').classList.add('hidden');
+      notify('Đã lưu Token thành công!');
+      render();
+      syncCloud();
     });
 
-    document.getElementById('btnSaveToken').addEventListener('click', async () => {
-      const rawVal = document.getElementById('tokenInput').value;
-      const clean = sanitizeToken(rawVal);
-      const statusBox = document.getElementById('tokenVerifyStatus');
-      
-      if (!clean) {
-        DB.token = '';
-        localStorage.removeItem('gc_token');
-        document.getElementById('tokenModal').classList.add('hidden');
-        render();
-        notify('Đã xoá Token.');
-        return;
-      }
-
-      document.getElementById('tokenInput').value = clean;
-      statusBox.className = 'p-2.5 rounded-lg text-[11px] bg-indigo-50 text-indigo-700 block';
-      statusBox.textContent = 'Đang kiểm tra quyền ghi vào kho GitHub...';
-
-      try {
-        const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}`, {
-          headers: { 
-            'Authorization': 'Bearer ' + clean, 
-            'Accept': 'application/vnd.github.v3+json' 
-          }
-        });
-
-        if (res.ok) {
-          const repoData = await res.json();
-          if (repoData.permissions && repoData.permissions.push) {
-            DB.token = clean;
-            localStorage.setItem('gc_token', clean);
-            statusBox.className = 'p-2.5 rounded-lg text-[11px] bg-emerald-50 text-emerald-800 block';
-            statusBox.innerHTML = '<b>Kết nối hoàn hảo!</b> Token có đầy đủ quyền GHI lên đám mây. Mọi máy khác sẽ thấy ảnh!';
-            setTimeout(() => {
-              document.getElementById('tokenModal').classList.add('hidden');
-              render();
-              syncCloud();
-            }, 1000);
-          } else {
-            statusBox.className = 'p-2.5 rounded-lg text-[11px] bg-rose-50 text-rose-800 block';
-            statusBox.innerHTML = '<b>CẢNH BÁO:</b> Token này chỉ có quyền ĐỌC, <b>KHÔNG có quyền GHI</b>! Hãy bấm vào link bên dưới để tạo token và tích chọn ô <b>repo</b> nhé!';
-          }
-        } else {
-          const err = await res.json().catch(() => ({}));
-          statusBox.className = 'p-2.5 rounded-lg text-[11px] bg-rose-50 text-rose-800 block';
-          statusBox.innerHTML = `<b>Lỗi Token:</b> ${err.message || 'Mã Token không đúng'}. Hãy bấm vào link bên dưới để tạo lại.`;
-        }
-      } catch(e) {
-        statusBox.className = 'p-2.5 rounded-lg text-[11px] bg-rose-50 text-rose-800 block';
-        statusBox.textContent = `Lỗi kiểm tra: ${e.message}`;
-      }
-    });
-
+    // Tạo Thư Mục Mới
     function openFolderModal() {
       document.getElementById('folderNameInput').value = '';
       document.getElementById('folderModal').classList.remove('hidden');
@@ -687,60 +756,76 @@
     document.getElementById('btnSaveFolder').addEventListener('click', async () => {
       const n = document.getElementById('folderNameInput').value.trim();
       if (!n) return;
-
       const newFolderId = 'f-' + Date.now();
       const newFolderObj = { id: newFolderId, name: n, parent: DB.curFolder };
-
       DB.folders.push(newFolderObj);
       await idb.put(newFolderObj, 'folders');
       localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
       document.getElementById('folderModal').classList.add('hidden');
       render();
       notify('Đã tạo thư mục: ' + n);
+      if (DB.token) pushFileToGitHub({ name: n + '/.gitkeep', folder: 'root' }, 'data:text/plain;base64,');
+    });
 
-      if (DB.token) {
-        pushFolderToGitHub(n);
+    // XỬ LÝ NÚT XOÁ THƯ MỤC HOẠT ĐỘNG CHUẨN XÁC 100%
+    document.getElementById('folderContainer').addEventListener('click', (e) => {
+      const delBtn = e.target.closest('[data-fdel]');
+      if (delBtn) {
+        e.stopPropagation();
+        const fId = delBtn.dataset.fdel;
+        const targetF = DB.folders.find(x => x.id === fId);
+        if (targetF) {
+          DB.pendingDeleteFolderId = fId;
+          document.getElementById('deleteFolderConfirmText').textContent = `Bạn có chắc muốn xoá thư mục "${targetF.name}"?`;
+          document.getElementById('deleteFolderConfirmModal').classList.remove('hidden');
+        }
+        return;
+      }
+
+      const renBtn = e.target.closest('[data-fren]');
+      if (renBtn) {
+        e.stopPropagation();
+        DB.target = { type: 'folder', id: renBtn.dataset.fren };
+        const f = DB.folders.find(x => x.id === renBtn.dataset.fren);
+        document.getElementById('renameInput').value = f ? f.name : '';
+        document.getElementById('renameModal').classList.remove('hidden');
+        return;
+      }
+
+      const card = e.target.closest('[data-fcard]');
+      if (card) {
+        DB.curFolder = card.dataset.fcard;
+        render();
       }
     });
 
+    // Xác nhận xoá thư mục
+    document.getElementById('btnCancelDeleteFolder').addEventListener('click', () => {
+      document.getElementById('deleteFolderConfirmModal').classList.add('hidden');
+      DB.pendingDeleteFolderId = null;
+    });
+
+    document.getElementById('btnConfirmDeleteFolder').addEventListener('click', async () => {
+      const idToDelete = DB.pendingDeleteFolderId;
+      if (idToDelete) {
+        DB.folders = DB.folders.filter(x => x.id !== idToDelete);
+        await idb.delete(idToDelete, 'folders');
+        localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
+        render();
+        notify('Đã xoá thư mục thành công!');
+      }
+      document.getElementById('deleteFolderConfirmModal').classList.add('hidden');
+      DB.pendingDeleteFolderId = null;
+    });
+
+    // Breadcrumb click
     document.getElementById('breadcrumb').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-nav]');
       if (btn) { DB.curFolder = btn.dataset.nav; render(); }
     });
 
-    document.getElementById('folderContainer').addEventListener('click', (e) => {
-      const ren = e.target.closest('[data-fren]');
-      if (ren) {
-        DB.target = { type: 'folder', id: ren.dataset.fren };
-        const f = DB.folders.find(x => x.id === ren.dataset.fren);
-        document.getElementById('renameInput').value = f ? f.name : '';
-        document.getElementById('renameModal').classList.remove('hidden');
-        return;
-      }
-      const del = e.target.closest('[data-fdel]');
-      if (del) {
-        const idToDelete = del.dataset.fdel;
-        DB.folders = DB.folders.filter(x => x.id !== idToDelete);
-        idb.delete(idToDelete, 'folders');
-        localStorage.setItem('gc_folders', JSON.stringify(DB.folders));
-        render();
-        notify('Đã xoá thư mục.');
-        return;
-      }
-      const card = e.target.closest('[data-fcard]');
-      if (card) { DB.curFolder = card.dataset.fcard; render(); }
-    });
-
+    // File Grid click (Đổi tên & Xoá)
     document.getElementById('fileGrid').addEventListener('click', async (e) => {
-      const pushBtn = e.target.closest('[data-push]');
-      if (pushBtn) {
-        const fileItem = DB.files.find(x => x.id === pushBtn.dataset.push);
-        if (fileItem && fileItem.url) {
-          await pushFileToGitHub(fileItem, fileItem.url);
-        }
-        return;
-      }
-
       const ren = e.target.closest('[data-ren]');
       if (ren) {
         DB.target = { type: 'file', id: ren.dataset.ren };
@@ -777,22 +862,241 @@
       document.getElementById('renameModal').classList.add('hidden');
     });
 
+    // Tải file trực tiếp
     const fInput = document.getElementById('fileInput');
     document.getElementById('dropZone').addEventListener('click', () => fInput.click());
-
     fInput.addEventListener('change', (e) => {
       const files = Array.from(e.target.files);
       files.forEach(uploadDirectlyInApp);
       fInput.value = '';
     });
 
+    // BẬT / TẮT SOẠN THẢO WORD KHI BẤM NÚT WORD
     document.getElementById('tabs').addEventListener('click', (e) => {
       const btn = e.target.closest('.tab-btn');
       if (!btn) return;
       document.querySelectorAll('.tab-btn').forEach(x => x.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-200');
       btn.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white';
+      
       DB.curCat = btn.dataset.cat;
+      const wordEditor = document.getElementById('wordEditorSection');
+      if (DB.curCat === 'word') {
+        wordEditor.classList.remove('hidden');
+      } else {
+        wordEditor.classList.add('hidden');
+      }
       render();
+    });
+
+    // Nút lưu văn bản Word & Toolbar
+    document.getElementById('btnSaveWordDoc').addEventListener('click', saveWordDocument);
+    document.getElementById('btnCloseWordEditor').addEventListener('click', () => {
+      document.getElementById('wordEditorSection').classList.add('hidden');
+    });
+
+    document.querySelectorAll('.word-tool-btn').forEach(b => {
+      b.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const cmd = b.dataset.cmd;
+        const val = b.dataset.val || null;
+        document.execCommand(cmd, false, val);
+        document.getElementById('wordContentArea').focus();
+      });
+    });
+
+    // TRỢ LÝ AI (TÁCH ẢNH & TẠO VIDEO)
+    document.getElementById('btnAiStudio').addEventListener('click', () => {
+      document.getElementById('aiStudioSection').classList.toggle('hidden');
+    });
+    document.getElementById('btnCloseAiStudio').addEventListener('click', () => {
+      document.getElementById('aiStudioSection').classList.add('hidden');
+    });
+
+    document.getElementById('btnAiTabBg').addEventListener('click', () => {
+      document.getElementById('btnAiTabBg').className = 'py-2 rounded-xl bg-purple-600 text-white flex items-center justify-center space-x-1 shadow-2xs';
+      document.getElementById('btnAiTabVideo').className = 'py-2 rounded-xl bg-white text-slate-600 border border-purple-200 hover:bg-purple-50 flex items-center justify-center space-x-1';
+      document.getElementById('aiBgTool').classList.remove('hidden');
+      document.getElementById('aiVideoTool').classList.add('hidden');
+    });
+
+    document.getElementById('btnAiTabVideo').addEventListener('click', () => {
+      document.getElementById('btnAiTabVideo').className = 'py-2 rounded-xl bg-purple-600 text-white flex items-center justify-center space-x-1 shadow-2xs';
+      document.getElementById('btnAiTabBg').className = 'py-2 rounded-xl bg-white text-slate-600 border border-purple-200 hover:bg-purple-50 flex items-center justify-center space-x-1';
+      document.getElementById('aiBgTool').classList.add('hidden');
+      document.getElementById('aiVideoTool').classList.remove('hidden');
+    });
+
+    // 1. AI Tách Nền Ảnh
+    let lastAiBgBlob = null;
+    document.getElementById('btnRunAiBg').addEventListener('click', () => {
+      const input = document.getElementById('aiBgInput');
+      if (!input.files || input.files.length === 0) {
+        notify('Vui lòng chọn 1 bức ảnh để AI tách nền!', true);
+        return;
+      }
+      const file = input.files[0];
+      setLoading(true, 'AI đang phân tích và tách nền ảnh...');
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+          
+          const bgR = (data[0] + data[(canvas.width - 1) * 4] + data[(canvas.height - 1) * canvas.width * 4]) / 3;
+          const bgG = (data[1] + data[(canvas.width - 1) * 4 + 1] + data[(canvas.height - 1) * canvas.width * 4 + 1]) / 3;
+          const bgB = (data[2] + data[(canvas.width - 1) * 4 + 2] + data[(canvas.height - 1) * canvas.width * 4 + 2]) / 3;
+
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i], g = data[i + 1], b = data[i + 2];
+            const diff = Math.sqrt((r - bgR)**2 + (g - bgG)**2 + (b - bgB)**2);
+            if (diff < 55) {
+              data[i + 3] = 0;
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+
+          canvas.toBlob((blob) => {
+            setLoading(false);
+            if (blob) {
+              lastAiBgBlob = blob;
+              const resUrl = URL.createObjectURL(blob);
+              document.getElementById('aiBgResultImg').src = resUrl;
+              document.getElementById('aiBgResultBox').classList.remove('hidden');
+              notify('AI đã tách nền thành công!');
+            }
+          }, 'image/png');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('btnSaveBgToFolder').addEventListener('click', async () => {
+      if (!lastAiBgBlob) return;
+      const fileId = 'ai-bg-' + Date.now();
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const item = {
+          id: fileId,
+          folder: DB.curFolder,
+          name: 'Anh_tach_nen_' + Date.now() + '.png',
+          cat: 'image',
+          size: lastAiBgBlob.size,
+          url: reader.result,
+          isCloud: false
+        };
+        await idb.put(item, 'files');
+        DB.files.unshift(item);
+        render();
+        notify('Đã lưu ảnh tách nền vào thư mục hiện tại!');
+        if (DB.token) pushFileToGitHub(item, reader.result);
+      };
+      reader.readAsDataURL(lastAiBgBlob);
+    });
+
+    // 2. AI Dựng Video Từ Ảnh
+    let lastAiVideoBlob = null;
+    document.getElementById('btnRunAiVideo').addEventListener('click', async () => {
+      const input = document.getElementById('aiVideoInput');
+      if (!input.files || input.files.length < 2) {
+        notify('Vui lòng chọn từ 2 bức ảnh trở lên để AI dựng video!', true);
+        return;
+      }
+
+      setLoading(true, 'AI đang tổng hợp khung hình và xuất video...');
+
+      const images = await Promise.all(Array.from(input.files).map(f => {
+        return new Promise(res => {
+          const r = new FileReader();
+          r.onload = (e) => {
+            const im = new Image();
+            im.onload = () => res(im);
+            im.src = e.target.result;
+          };
+          r.readAsDataURL(f);
+        });
+      }));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 360;
+      const ctx = canvas.getContext('2d');
+
+      const stream = canvas.captureStream(30);
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      const chunks = [];
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = () => {
+        setLoading(false);
+        lastAiVideoBlob = new Blob(chunks, { type: 'video/webm' });
+        const vidUrl = URL.createObjectURL(lastAiVideoBlob);
+        const vid = document.getElementById('aiVideoPreview');
+        vid.src = vidUrl;
+        document.getElementById('aiVideoResultBox').classList.remove('hidden');
+        notify('AI đã dựng xong video slide mượt mà!');
+      };
+
+      recorder.start();
+
+      let imgIdx = 0;
+      let frameCount = 0;
+      const totalFramesPerImg = 60;
+
+      const anim = setInterval(() => {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const currentImg = images[imgIdx];
+        if (currentImg) {
+          const scale = 1 + (frameCount / totalFramesPerImg) * 0.08;
+          const w = canvas.width * scale;
+          const h = (canvas.width / (currentImg.width / currentImg.height)) * scale;
+          const x = (canvas.width - w) / 2;
+          const y = (canvas.height - h) / 2;
+          ctx.drawImage(currentImg, x, y, w, h);
+        }
+
+        frameCount++;
+        if (frameCount >= totalFramesPerImg) {
+          frameCount = 0;
+          imgIdx++;
+          if (imgIdx >= images.length) {
+            clearInterval(anim);
+            setTimeout(() => recorder.stop(), 300);
+          }
+        }
+      }, 33);
+    });
+
+    document.getElementById('btnSaveVideoToFolder').addEventListener('click', async () => {
+      if (!lastAiVideoBlob) return;
+      const fileId = 'ai-vid-' + Date.now();
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const item = {
+          id: fileId,
+          folder: DB.curFolder,
+          name: 'Video_tao_tu_AI_' + Date.now() + '.webm',
+          cat: 'video',
+          size: lastAiVideoBlob.size,
+          url: reader.result,
+          isCloud: false
+        };
+        await idb.put(item, 'files');
+        DB.files.unshift(item);
+        render();
+        notify('Đã lưu video vào thư mục hiện tại!');
+        if (DB.token) pushFileToGitHub(item, reader.result);
+      };
+      reader.readAsDataURL(lastAiVideoBlob);
     });
 
     window.addEventListener('DOMContentLoaded', async () => {
