@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": 1794233397282,
+  "updatedAt": 1794233498807,
   "folders": [
     {
       "id": "root",
@@ -90,6 +90,15 @@
     }
   ],
   "files": [
+    {
+      "id": "file-1794233495242-4esv",
+      "name": "Screenshot_2026-11-09-21-07-12-08_5514c6a9693cdde5953049fbdae902c9.jpg",
+      "folder": "f-1794233395125",
+      "cat": "image",
+      "size": 505391,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/tmc/a_nh/creenshot_------_cacddebdaec.jpg",
+      "isCloud": true
+    },
     {
       "id": "gh-0d49020f070a59c9a126320d56876e280398342e",
       "name": "Screenshot_2026-11-08-20-04-23-38_5514c6a9693cdde5953049fbdae902c9.jpg",
