@@ -1,0 +1,235 @@
+{
+  "version": 2,
+  "updatedAt": 1794233008774,
+  "folders": [
+    {
+      "id": "root",
+      "name": "Trang chủ",
+      "parent": null
+    },
+    {
+      "id": "f-1794044359611",
+      "name": "Ảnh",
+      "parent": "f-1794036941405"
+    },
+    {
+      "id": "f-1794050465972",
+      "name": "Ảnh",
+      "parent": "f-1794036941405"
+    },
+    {
+      "id": "f-1794140009754",
+      "name": "Ntmcs",
+      "parent": "root"
+    },
+    {
+      "id": "f-1794140020496",
+      "name": "Ntmc4",
+      "parent": "root"
+    },
+    {
+      "id": "f-1794141429412",
+      "name": "Ntmc02",
+      "parent": "root"
+    },
+    {
+      "id": "f-1794141442543",
+      "name": "Ntmcnov",
+      "parent": "root"
+    },
+    {
+      "id": "f-1794141453339",
+      "name": "Ntmcdec",
+      "parent": "root"
+    },
+    {
+      "id": "f-1794141468731",
+      "name": "Ntmcmay",
+      "parent": "root"
+    },
+    {
+      "id": "f-1794141477052",
+      "name": "nuocthuysi2020",
+      "parent": "root"
+    },
+    {
+      "id": "f-1794143227536",
+      "name": "Mì trộn tương đen",
+      "parent": "f-1794141429412"
+    },
+    {
+      "id": "f-auto-Ntmc02_M__tr_n_t__ng__en",
+      "name": "M  tr n t  ng  en",
+      "parent": "f-1794141429412"
+    },
+    {
+      "id": "f-auto-Ntmc02_M__tr_n_t__ng__en",
+      "name": "M  tr n t  ng  en",
+      "parent": "f-1794141429412"
+    },
+    {
+      "id": "f-auto-Ntmc02_M__tr_n_t__ng__en",
+      "name": "M  tr n t  ng  en",
+      "parent": "f-1794141429412"
+    },
+    {
+      "id": "f-auto-Ntmc02_M__tr_n_t__ng__en",
+      "name": "M  tr n t  ng  en",
+      "parent": "f-1794141429412"
+    }
+  ],
+  "prompts": [
+    {
+      "id": "p1",
+      "title": "Tách tóc & chi tiết mịn (ChatGPT)",
+      "cat": "image",
+      "content": "Isolate main subject, pixel-perfect edge detection, 100% transparent background PNG, preserve hair and fine contours."
+    },
+    {
+      "id": "p2",
+      "title": "Tách sản phẩm thương mại (ChatGPT)",
+      "cat": "image",
+      "content": "Extract commercial product in foreground, transparent background PNG, clean studio cutout, no shadows."
+    },
+    {
+      "id": "p3",
+      "title": "Góc quay Cinematic Drone (AI Flow)",
+      "cat": "video",
+      "content": "Cinematic slow drone flight forward, dramatic lighting, photorealistic 4k, fluid camera motion, 60fps."
+    },
+    {
+      "id": "p4",
+      "title": "Chuyển động nhân vật sống động (AI Flow)",
+      "cat": "video",
+      "content": "Dynamic character motion, natural breathing, consistent face details, cinematic shallow depth of field."
+    }
+  ],
+  "files": [
+    {
+      "id": "gh-e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "name": "nuocthuysi2020_.gitkeep",
+      "folder": "root",
+      "cat": "other",
+      "size": 0,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/nuocthuysi2020_.gitkeep",
+      "isCloud": true
+    },
+    {
+      "id": "gh-0d49020f070a59c9a126320d56876e280398342e",
+      "name": "Screenshot_2026-11-08-20-04-23-38_5514c6a9693cdde5953049fbdae902c9.jpg",
+      "folder": "root",
+      "cat": "image",
+      "size": 471750,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/Screenshot_2026-11-08-20-04-23-38_5514c6a9693cdde5953049fbdae902c9.jpg",
+      "isCloud": true
+    },
+    {
+      "id": "gh-e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "name": "Ntmcnov_.gitkeep",
+      "folder": "root",
+      "cat": "other",
+      "size": 0,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/Ntmcnov_.gitkeep",
+      "isCloud": true
+    },
+    {
+      "id": "gh-e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "name": "Ntmcmay_.gitkeep",
+      "folder": "root",
+      "cat": "other",
+      "size": 0,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/Ntmcmay_.gitkeep",
+      "isCloud": true
+    },
+    {
+      "id": "gh-e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "name": "Ntmcdec_.gitkeep",
+      "folder": "root",
+      "cat": "other",
+      "size": 0,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/Ntmcdec_.gitkeep",
+      "isCloud": true
+    },
+    {
+      "id": "gh-e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "name": "Ntmc02_.gitkeep",
+      "folder": "root",
+      "cat": "other",
+      "size": 0,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/Ntmc02_.gitkeep",
+      "isCloud": true
+    },
+    {
+      "id": "gh-0d49020f070a59c9a126320d56876e280398342e",
+      "name": "Screenshot_2026-11-08-20-04-23-38_5514c6a9693cdde5953049fbdae902c9.jpg",
+      "folder": "f-1794141429412",
+      "cat": "image",
+      "size": 471750,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/Ntmc02/Screenshot_2026-11-08-20-04-23-38_5514c6a9693cdde5953049fbdae902c9.jpg",
+      "isCloud": true
+    },
+    {
+      "id": "gh-bfdf2a50d9b795326be0490bd65f17fef6a52f32",
+      "name": "Van_ban_moi.docx",
+      "folder": "f-auto-Ntmc02_M__tr_n_t__ng__en",
+      "cat": "word",
+      "size": 215,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/Ntmc02/M__tr_n_t__ng__en/Van_ban_moi.docx",
+      "isCloud": true
+    },
+    {
+      "id": "gh-0d49020f070a59c9a126320d56876e280398342e",
+      "name": "Screenshot_2026-11-08-20-04-23-38_5514c6a9693cdde5953049fbdae902c9.jpg",
+      "folder": "f-auto-Ntmc02_M__tr_n_t__ng__en",
+      "cat": "image",
+      "size": 471750,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/Ntmc02/M__tr_n_t__ng__en/Screenshot_2026-11-08-20-04-23-38_5514c6a9693cdde5953049fbdae902c9.jpg",
+      "isCloud": true
+    },
+    {
+      "id": "gh-656d7877eb0a82f093ee10326c7249eb5bc3da5e",
+      "name": "Screenshot_2026-11-08-20-02-44-39_5514c6a9693cdde5953049fbdae902c9.jpg",
+      "folder": "f-auto-Ntmc02_M__tr_n_t__ng__en",
+      "cat": "image",
+      "size": 587761,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/Ntmc02/M__tr_n_t__ng__en/Screenshot_2026-11-08-20-02-44-39_5514c6a9693cdde5953049fbdae902c9.jpg",
+      "isCloud": true
+    },
+    {
+      "id": "gh-93c00f3fea88f805a368252ffd484efde341ac18",
+      "name": "IMG_20261108_200557.jpg",
+      "folder": "f-auto-Ntmc02_M__tr_n_t__ng__en",
+      "cat": "image",
+      "size": 176019,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/Ntmc02/M__tr_n_t__ng__en/IMG_20261108_200557.jpg",
+      "isCloud": true
+    },
+    {
+      "id": "gh-e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "name": "M__tr_n_t__ng__en_.gitkeep",
+      "folder": "root",
+      "cat": "other",
+      "size": 0,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/M__tr_n_t__ng__en_.gitkeep",
+      "isCloud": true
+    },
+    {
+      "id": "gh-55a50d85ad245f4bc01bf3c09c6666b830201fa4",
+      "name": "IMG_20261101_142007_250.jpg",
+      "folder": "root",
+      "cat": "image",
+      "size": 107579,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/IMG_20261101_142007_250.jpg",
+      "isCloud": true
+    },
+    {
+      "id": "gh-9cd276c426fdab6a0a005370998d686203424495",
+      "name": "IMG_20261101_083156_291.jpg",
+      "folder": "root",
+      "cat": "image",
+      "size": 177565,
+      "url": "https://raw.githubusercontent.com/minhchaunap/my-storage-drive/main/IMG_20261101_083156_291.jpg",
+      "isCloud": true
+    }
+  ]
+}
